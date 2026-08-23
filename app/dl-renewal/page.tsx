@@ -1178,7 +1178,6 @@ export default function DLRenewalPage() {
                       {stages.map((stage, i) => {
                         const isCompleted = i <= activeIdx && application.status === "approved" ? true : i < activeIdx;
                         const isCurrent = i === activeIdx && application.status !== "approved";
-                        const isFuture = i > activeIdx;
                         
                         return (
                           <div key={stage.id} className="flex gap-4">

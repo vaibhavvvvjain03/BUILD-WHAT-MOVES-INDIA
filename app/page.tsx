@@ -3,36 +3,35 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  ArrowRight, CreditCard, FileText, CheckCircle, Clock, ShieldCheck,
+  ArrowRight, FileText, CheckCircle, Clock, ShieldCheck,
   CarFront, FileBadge, Banknote, HelpCircle, FileSearch, Search,
 } from "lucide-react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/components/LangContext";
 import { t } from "@/lib/translations";
 
 // ── Intent options ────────────────────────────────────────────────────────────
 const INTENT_ITEMS = [
-  { key: "intent_renew",    href: "/dl-renewal",   icon: FileBadge,  accent: true  },
-  { key: "intent_transfer", href: "/coming-soon",  icon: CarFront,   accent: false },
-  { key: "intent_challan",  href: "/coming-soon",  icon: Banknote,   accent: false },
-  { key: "intent_track",    href: "/coming-soon",  icon: FileText,   accent: false },
-  { key: "intent_document", href: "/coming-soon",  icon: FileSearch, accent: false },
+  { key: "intent_renew",    href: "/services/dl-renewal",   icon: FileBadge,  accent: true  },
+  { key: "intent_transfer", href: "/services/transfer-ownership",  icon: CarFront,   accent: false },
+  { key: "intent_challan",  href: "/services/pay-challan",  icon: Banknote,   accent: false },
+  { key: "intent_track",    href: "/track-application",  icon: FileText,   accent: false },
+  { key: "intent_document", href: "/services/duplicate-rc",  icon: FileSearch, accent: false },
   { key: "intent_unsure",   href: "palette",       icon: HelpCircle, accent: false },
 ];
 
 // ── Popular Tasks (same data as command palette "Most Used") ──────────────────
 const POPULAR_TASKS = [
-  { label: "Renew Driving Licence",  href: "/dl-renewal",   icon: FileBadge,  tag: "LIVE" },
-  { label: "Pay eChallan",           href: "/coming-soon",  icon: Banknote,   tag: null },
-  { label: "Track Application",      href: "/coming-soon",  icon: FileText,   tag: null },
-  { label: "Vehicle Registration",   href: "/coming-soon",  icon: CarFront,   tag: null },
-  { label: "Duplicate RC",           href: "/coming-soon",  icon: FileSearch, tag: null },
-  { label: "Learner's Licence",      href: "/coming-soon",  icon: FileBadge,  tag: null },
+  { label: "Renew Driving Licence",  href: "/services/dl-renewal",   icon: FileBadge,  tag: "LIVE" },
+  { label: "Pay eChallan",           href: "/services/pay-challan",  icon: Banknote,   tag: null },
+  { label: "Track Application",      href: "/track-application",  icon: FileText,   tag: null },
+  { label: "Transfer Vehicle",       href: "/services/transfer-ownership",  icon: CarFront,   tag: null },
+  { label: "Duplicate RC",           href: "/services/duplicate-rc",  icon: FileSearch, tag: null },
+  { label: "Change Address",         href: "/services/change-address",  icon: FileBadge,  tag: null },
 ];
 
 export default function Home() {
   const { lang } = useLang();
-  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const words = [
     t(lang, "word_licence"),
@@ -41,7 +40,6 @@ export default function Home() {
     t(lang, "word_tax"),
   ];
   const [index, setIndex] = useState(0);
-  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -93,7 +91,7 @@ export default function Home() {
           {t(lang, "hero_subtitle")}
         </p>
         <Link
-          href="/dl-renewal"
+          href="/services/dl-renewal"
           className="inline-flex items-center gap-2 bg-accent text-primary font-semibold px-8 py-4 rounded-full text-lg transition-transform hover:scale-105 active:scale-95 shadow-lg"
         >
           {t(lang, "hero_cta")}
@@ -107,7 +105,7 @@ export default function Home() {
           {t(lang, "intent_heading")}
         </h2>
         <p className="text-center text-text/60 font-ibm-plex mb-8 text-sm">
-          Choose your goal and we'll take you straight there.
+          Choose your goal and we&apos;ll take you straight there.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {INTENT_ITEMS.map((item) => {
@@ -218,76 +216,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── All Vehicle Services Grid ── */}
-      <section>
-        <h2 className="text-3xl font-bold font-inter text-primary mb-10 text-center md:text-left">
-          All Vehicle Services
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-          {/* Card 1 */}
-          <Link href="/dl-renewal" className="group bg-white p-8 rounded-3xl shadow-sm hover:shadow-md transition-all border border-text/5 flex flex-col items-start h-full relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-success text-primary text-xs font-bold px-3 py-1 rounded-bl-xl z-10">LIVE</div>
-            <div className="w-14 h-14 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <FileBadge className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold font-inter text-primary mb-2">Driving Licence</h3>
-            <p className="text-text/70 mb-6 flex-1">Apply for a new licence, renew an expired one, or update your personal details.</p>
-            <span className="font-semibold text-accent flex items-center gap-1 group-hover:gap-2 transition-all">
-              Start Application <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
-
-          {/* Card 2 */}
-          <Link href="/coming-soon" className="group bg-white p-8 rounded-3xl shadow-sm hover:shadow-md transition-all border border-text/5 flex flex-col items-start h-full">
-            <div className="w-14 h-14 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <CarFront className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold font-inter text-primary mb-2">Vehicle Registration</h3>
-            <p className="text-text/70 mb-6 flex-1">Register a new vehicle, transfer ownership, or get a duplicate RC.</p>
-            <span className="font-semibold text-primary/40 group-hover:text-primary transition-colors flex items-center gap-1">
-              Explore Services <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
-
-          {/* Card 3 */}
-          <Link href="/coming-soon" className="group bg-white p-8 rounded-3xl shadow-sm hover:shadow-md transition-all border border-text/5 flex flex-col items-start h-full">
-            <div className="w-14 h-14 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <Banknote className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold font-inter text-primary mb-2">Payments & Tax</h3>
-            <p className="text-text/70 mb-6 flex-1">Pay your road tax, clear pending challans, and check your payment history.</p>
-            <span className="font-semibold text-primary/40 group-hover:text-primary transition-colors flex items-center gap-1">
-              Pay Now <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
-
-          {/* Card 4 */}
-          <Link href="/coming-soon" className="group bg-white p-8 rounded-3xl shadow-sm hover:shadow-md transition-all border border-text/5 flex flex-col items-start h-full">
-            <div className="w-14 h-14 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <FileText className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold font-inter text-primary mb-2">Track Status</h3>
-            <p className="text-text/70 mb-6 flex-1">Enter your application number to track the real-time progress of any request.</p>
-            <span className="font-semibold text-primary/40 group-hover:text-primary transition-colors flex items-center gap-1">
-              Track Application <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
-
-          {/* Card 5 */}
-          <Link href="/coming-soon" className="group bg-white p-8 rounded-3xl shadow-sm hover:shadow-md transition-all border border-text/5 flex flex-col items-start h-full">
-            <div className="w-14 h-14 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <CreditCard className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold font-inter text-primary mb-2">Permits</h3>
-            <p className="text-text/70 mb-6 flex-1">Apply for national, state, or temporary permits for your commercial vehicles.</p>
-            <span className="font-semibold text-primary/40 group-hover:text-primary transition-colors flex items-center gap-1">
-              View Permits <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
-
-        </div>
-      </section>
+      {/* ── End of homepage sections ── */}
 
     </div>
   );

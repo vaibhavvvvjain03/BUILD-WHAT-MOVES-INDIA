@@ -5,48 +5,20 @@ import { usePathname } from "next/navigation";
 import { Search, X, ChevronDown, FileBadge, CarFront, Banknote, FileText, Languages } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/components/LangContext";
-import { t, Lang, LANGUAGE_NAMES, ALL_TRANSLATION_KEYS } from "@/lib/translations";
+import { t, Lang, LANGUAGE_NAMES } from "@/lib/translations";
 
-const ALL_SECTIONS = [
-  {
-    id: "licence",
-    title: "Licence Services",
-    items: [
-      { name: "Driving Licence Renewal", href: "/dl-renewal" },
-      { name: "Apply for Learner's Licence", href: "/coming-soon" },
-      { name: "Duplicate Driving Licence", href: "/coming-soon" },
-      { name: "International Driving Permit", href: "/coming-soon" },
-    ],
-  },
-  {
-    id: "vehicle",
-    title: "Vehicle Services",
-    items: [
-      { name: "Vehicle Registration", href: "/coming-soon" },
-      { name: "Transfer of Ownership", href: "/coming-soon" },
-      { name: "Duplicate RC", href: "/coming-soon" },
-      { name: "Hypothecation", href: "/coming-soon" },
-    ],
-  },
-  {
-    id: "payments",
-    title: "Payments & Tax",
-    items: [
-      { name: "Pay Road Tax", href: "/coming-soon" },
-      { name: "Pay eChallan", href: "/coming-soon" },
-      { name: "Fee Payments", href: "/coming-soon" },
-    ],
-  },
-  {
-    id: "permits",
-    title: "Permits & Certificates",
-    items: [
-      { name: "National Permit", href: "/coming-soon" },
-      { name: "PUCC (Pollution)", href: "/coming-soon" },
-      { name: "Special Permits", href: "/coming-soon" },
-    ],
-  },
-];
+import { serviceCategories, getAllServices } from "@/lib/serviceCatalog";
+
+const ALL_SECTIONS = serviceCategories.map(category => ({
+  id: category.toLowerCase().replace(/\s+/g, '-'),
+  title: category,
+  items: getAllServices()
+    .filter(s => s.category === category)
+    .map(s => ({
+      name: s.name,
+      href: `/services/${s.id}`
+    }))
+})).filter(section => section.items.length > 0);
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -57,14 +29,15 @@ export default function Navbar() {
   const langDropdownRef = useRef<HTMLDivElement>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
-  // Simplified nav items
+  // Navigation as requested: Home, Services, My Parivahan, Track Application, Help, About, Login
   const topNavItems = [
-    { name: t(lang, "nav_home"),         href: "/" },
-    { name: t(lang, "nav_services"),     isModalTrigger: true },
-    { name: t(lang, "nav_applications"), href: "/coming-soon" },
-    { name: t(lang, "nav_help"),         href: "/coming-soon" },
-    { name: t(lang, "nav_about"),        href: "/coming-soon" },
-    { name: t(lang, "nav_login"),        href: "/coming-soon" },
+    { name: t(lang, "nav_home") || "Home",               href: "/" },
+    { name: t(lang, "nav_services") || "Services",           isModalTrigger: true }, // Opens the finder, or could link to /services directly
+    { name: "My Parivahan",            href: "/my-parivahan" },
+    { name: "Track Application",       href: "/track-application" },
+    { name: t(lang, "nav_help") || "Help",               href: "/help" },
+    { name: t(lang, "nav_about") || "About",              href: "/about" },
+    { name: t(lang, "nav_login") || "Login",              href: "/login" },
   ];
 
   // Esc to close modal & dropdown
@@ -219,30 +192,45 @@ export default function Navbar() {
               className="relative w-full max-w-3xl bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             >
               {/* Search Header */}
-              <div className="p-4 bg-white border-b border-text/10">
-                <div className="flex items-center px-4 py-3 bg-background rounded-xl border-2 border-transparent focus-within:border-accent transition-colors shadow-inner">
-                  <Search className="w-5 h-5 text-text/40 mr-3 shrink-0" />
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="Search for a service..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 bg-transparent text-base md:text-lg font-medium text-text outline-none placeholder:text-text/30"
-                  />
-                  {searchTerm && (
-                    <button onClick={() => setSearchTerm("")} className="p-1 hover:bg-text/5 rounded-full text-text/40 hover:text-text mr-2 transition-colors">
-                      <X className="w-4 h-4" />
+                <div className="flex flex-col px-4 pt-4 pb-2 bg-white border-b border-text/10 gap-3">
+                  {/* Search Type Toggle */}
+                  <div className="flex bg-text/5 p-1 rounded-lg w-fit">
+                    <button 
+                      className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white shadow-sm text-primary"
+                    >
+                      Browse & Search
                     </button>
-                  )}
-                  <button
-                    onClick={() => setIsModalOpen(false)}
-                    className="hidden sm:block px-2.5 py-1 text-xs font-semibold bg-white border border-text/10 text-text/50 rounded-md shadow-sm transition-colors"
-                  >
-                    ESC
-                  </button>
+                    <button 
+                      className="px-3 py-1.5 text-xs font-semibold rounded-md text-text/60 hover:text-text transition-colors"
+                      onClick={() => alert("Natural Language Search (Describe what you need) - AI Feature Placeholder")}
+                    >
+                      Describe what you need ✨
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center px-4 py-3 bg-background rounded-xl border-2 border-transparent focus-within:border-accent transition-colors shadow-inner">
+                    <Search className="w-5 h-5 text-text/40 mr-3 shrink-0" />
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="Search by service name or category..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-1 bg-transparent text-base md:text-lg font-medium text-text outline-none placeholder:text-text/30"
+                    />
+                    {searchTerm && (
+                      <button onClick={() => setSearchTerm("")} className="p-1 hover:bg-text/5 rounded-full text-text/40 hover:text-text mr-2 transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setIsModalOpen(false)}
+                      className="hidden sm:block px-2.5 py-1 text-xs font-semibold bg-white border border-text/10 text-text/50 rounded-md shadow-sm transition-colors"
+                    >
+                      ESC
+                    </button>
+                  </div>
                 </div>
-              </div>
 
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-hide">
@@ -251,19 +239,19 @@ export default function Navbar() {
                   <div className="mb-8">
                     <h3 className="text-xs font-bold text-text/40 uppercase tracking-wider mb-4 font-inter px-2">Most Used</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <Link href="/dl-renewal" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
+                      <Link href="/services/dl-renewal" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
                         <FileBadge className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
                         <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Renew Licence</span>
                       </Link>
-                      <Link href="/coming-soon" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
+                      <Link href="/services/transfer-ownership" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
                         <CarFront className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Vehicle Reg.</span>
+                        <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Transfer Vehicle</span>
                       </Link>
-                      <Link href="/coming-soon" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
+                      <Link href="/services/pay-challan" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
                         <Banknote className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
                         <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Pay Challan</span>
                       </Link>
-                      <Link href="/coming-soon" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
+                      <Link href="/track-application" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
                         <FileText className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
                         <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Track App</span>
                       </Link>
