@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: theme('colors.background');
+    color: theme('colors.text');
+  }
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* ── Typography Optimizations for Indian Scripts ── */
+/* Tall and complex scripts (Dravidian & Odia) need slightly larger font-size and more line-height 
+   to maintain legibility and alignment with English/Hindi. */
+html.lang-ta,
+html.lang-te,
+html.lang-ml,
+html.lang-kn,
+html.lang-or {
+  font-size: 16.5px;
+  line-height: 1.6;
+}
+
+/* Ensure the rotating words don't overflow when scaled up slightly */
+html.lang-ta .rotating-word,
+html.lang-te .rotating-word,
+html.lang-ml .rotating-word,
+html.lang-kn .rotating-word,
+html.lang-or .rotating-word {
+  transform: translateY(2px);
+}
