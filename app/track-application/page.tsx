@@ -2,45 +2,62 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Info, CheckCircle2, Clock, MapPin, SearchX } from "lucide-react";
+import { Search, Info, SearchX, ArrowLeft } from "lucide-react";
+import ApplicationDetailView from "@/components/ApplicationDetailView";
+import { RenewalApplication } from "@/lib/types";
 
 export default function TrackApplicationPage() {
   const [appNumber, setAppNumber] = useState("");
   const [dob, setDob] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<null | "found" | "not_found">(null);
+  const [applicationData, setApplicationData] = useState<RenewalApplication | null>(null);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!appNumber) return;
     
     setIsSearching(true);
     setResult(null);
+    setApplicationData(null);
 
-    // Mock API call
-    setTimeout(() => {
-      setIsSearching(false);
-      if (appNumber.toLowerCase() === "mock123") {
+    try {
+      // In a real app, we might also send DOB for verification
+      const res = await fetch(`/api/dl/application-status/${encodeURIComponent(appNumber)}`);
+      const data = await res.json();
+
+      if (res.ok && data.success && data.data.application) {
+        setApplicationData(data.data.application);
         setResult("found");
       } else {
         setResult("not_found");
       }
-    }, 1500);
+    } catch (err) {
+      console.error(err);
+      setResult("not_found");
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-bg">
       {/* ── Header ── */}
       <div className="bg-primary text-white py-16 mt-20">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold font-inter mb-4">Track Application</h1>
-          <p className="text-white/80 text-lg">
-            Enter your application details below to check the real-time status of your request.
-          </p>
+        <div className="max-w-4xl mx-auto px-6">
+          <Link href="/" className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-6 text-sm font-semibold">
+            <ArrowLeft className="w-4 h-4" /> Back to Home
+          </Link>
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold font-inter mb-4">Track Application</h1>
+            <p className="text-white/80 text-lg max-w-2xl mx-auto">
+              Enter your application details below to check the real-time status of your request.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-12 -mt-12 relative z-10">
+      <div className="max-w-4xl mx-auto px-6 py-12 -mt-12 relative z-10">
         <div className="bg-white rounded-3xl shadow-lg border border-text/5 overflow-hidden">
           {/* Search Form */}
           <div className="p-8 md:p-12">
@@ -55,12 +72,12 @@ export default function TrackApplicationPage() {
                     id="appNumber"
                     value={appNumber}
                     onChange={(e) => setAppNumber(e.target.value)}
-                    placeholder="e.g. 123456789"
+                    placeholder="e.g. PSW-2026-123456"
                     className="w-full bg-bg border border-text/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                   />
                   <p className="text-xs text-text/50 mt-2 flex items-center gap-1">
-                    <Info className="w-3 h-3" /> Try &quot;mock123&quot; for a demo
+                    <Info className="w-3 h-3" /> Note: This is the public tracking portal.
                   </p>
                 </div>
                 <div>
@@ -112,73 +129,9 @@ export default function TrackApplicationPage() {
             </div>
           )}
 
-          {result === "found" && (
-            <div className="bg-bg border-t border-text/5 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-8 border-b border-text/5">
-                <div>
-                  <h3 className="text-2xl font-bold font-inter text-primary mb-1">Driving Licence Renewal</h3>
-                  <p className="text-text/60 font-ibm-plex">App No: <span className="font-semibold text-text">mock123</span></p>
-                </div>
-                <div className="flex items-center gap-2 bg-success/10 text-success-dark px-4 py-2 rounded-full w-fit">
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <span className="font-bold text-sm uppercase tracking-wider">In Progress</span>
-                </div>
-              </div>
-
-              {/* Progress Timeline */}
-              <div className="space-y-8 relative">
-                {/* Connecting line */}
-                <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-text/10" />
-
-                <div className="relative flex gap-6">
-                  <div className="w-10 h-10 rounded-full bg-success text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg text-primary">Application Submitted</h4>
-                    <p className="text-text/70 text-sm mb-1">Your application and fee payment have been received.</p>
-                    <p className="text-xs text-text/50 font-ibm-plex">Oct 24, 2026 • 10:30 AM</p>
-                  </div>
-                </div>
-
-                <div className="relative flex gap-6">
-                  <div className="w-10 h-10 rounded-full bg-success text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg text-primary">Document Verification</h4>
-                    <p className="text-text/70 text-sm mb-1">Your uploaded documents have been verified by RTO officials.</p>
-                    <p className="text-xs text-text/50 font-ibm-plex">Oct 25, 2026 • 02:15 PM</p>
-                  </div>
-                </div>
-
-                <div className="relative flex gap-6 opacity-60">
-                  <div className="w-10 h-10 rounded-full bg-bg border-2 border-primary text-primary flex items-center justify-center flex-shrink-0 z-10">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg text-primary">Biometric Capture</h4>
-                    <p className="text-text/70 text-sm mb-2">Action required: Visit RTO for biometric capture.</p>
-                    <div className="bg-white border border-text/10 rounded-lg p-3 inline-flex items-center gap-3">
-                      <MapPin className="w-5 h-5 text-primary/50" />
-                      <div>
-                        <p className="text-sm font-semibold text-primary">RTO Office, Koramangala (KA-01)</p>
-                        <p className="text-xs text-text/60">Scheduled: Oct 28, 2026 • 11:00 AM</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative flex gap-6 opacity-40">
-                  <div className="w-10 h-10 rounded-full bg-bg border-2 border-text/20 text-text/30 flex items-center justify-center flex-shrink-0 z-10">
-                    <div className="w-2 h-2 rounded-full bg-text/20" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg text-text">Final Approval & Dispatch</h4>
-                    <p className="text-text/70 text-sm">Pending biometric completion.</p>
-                  </div>
-                </div>
-              </div>
+          {result === "found" && applicationData && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <ApplicationDetailView application={applicationData} />
             </div>
           )}
         </div>

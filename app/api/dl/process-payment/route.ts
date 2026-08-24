@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getRenewalStore } from "@/lib/mockData";
 
 export async function POST(req: NextRequest) {
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
       { status: "under_review", timestamp: now }
     );
     store.set(applicationId, application);
+    revalidatePath("/my-parivahan");
 
     // Auto-advance to "approved" after ~12 seconds (simulates processing time)
     setTimeout(() => {

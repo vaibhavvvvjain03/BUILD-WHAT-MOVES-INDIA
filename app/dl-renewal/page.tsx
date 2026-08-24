@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
+import { mockLicences } from "@/lib/mockData";
 import {
   CheckCircle,
   ChevronRight,
@@ -60,7 +63,7 @@ const INDIAN_STATES = [
   "Daman & Diu", "Delhi", "Jammu & Kashmir", "Ladakh",
   "Lakshadweep", "Puducherry",
 ];
-const LIVE_STATE = "Karnataka";
+const LIVE_STATES = ["Karnataka", "Delhi", "Maharashtra", "Tamil Nadu", "Uttar Pradesh", "West Bengal"];
 
 // ── CAPTCHA Generator ─────────────────────────────────────────────────────────
 function generateCaptchaText(): string {
@@ -126,7 +129,7 @@ function formatDateShort(iso: string) {
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 // ── Modern Date Picker ──────────────────────────────────────────────────────
-function DatePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+function DatePicker({ value, onChange, label, error }: { value: string; onChange: (v: string) => void; label: string; error?: string }) {
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(() => {
     if (value) return parseInt(value.split("-")[0]);
@@ -199,14 +202,15 @@ function DatePicker({ value, onChange, label }: { value: string; onChange: (v: s
         type="button"
         onClick={() => setOpen(o => !o)}
         className={`w-full px-4 py-3 rounded-xl border bg-[#F7F5F0] font-ibm-plex text-sm text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${
-          open ? "border-primary ring-2 ring-primary/30" : "border-text/20 hover:border-primary/40"
+          error ? "border-red-400 ring-red-400/20 ring-2" : open ? "border-primary ring-2 ring-primary/30" : "border-text/20 hover:border-primary/40"
         }`}
       >
         <span className={displayValue ? "text-text font-medium" : "text-text/40"}>
           {displayValue || "Select date of birth"}
         </span>
-        <Calendar className={`w-4 h-4 transition ${open ? "text-primary" : "text-primary/60"}`} />
+        <Calendar className={`w-4 h-4 transition ${error ? "text-red-500" : open ? "text-primary" : "text-primary/60"}`} />
       </button>
+      <FieldError error={error} />
 
       <AnimatePresence>
         {open && (
@@ -500,8 +504,38 @@ async function generateRenewalPDF(
   doc.save(`DL_Renewal_${application.applicationId}.pdf`);
 }
 
+// ── Validation Schemas & Components ──────────────────────────────────────────
+const dlSchema = z.string()
+  .transform(s => s.replace(/\s+/g, "").toUpperCase())
+  .refine(s => /^[A-Z]{2}[0-9]{2}[0-9]{4}[0-9]{7}$/.test(s), "Invalid DL format (e.g., MH01 2011 0012345)");
+
+const dobSchema = z.string().min(1, "Date of Birth is required")
+  .refine(val => {
+    if (!val) return false;
+    const age = (new Date().getTime() - new Date(val).getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    return age >= 18 && age <= 100;
+  }, "Age must be between 18 and 100 years");
+
+const captchaSchema = z.string().length(6, "CAPTCHA must be exactly 6 characters");
+const otpSchema = z.string().length(6, "OTP must be exactly 6 digits").regex(/^\d+$/, "OTP must contain only numbers");
+
+const docUploadSchema = z.custom<File>()
+  .refine(file => file && ["image/jpeg", "image/png", "application/pdf"].includes(file.type), "Only PDF, JPG, or PNG files are allowed")
+  .refine(file => file && file.size <= 5 * 1024 * 1024, "File size must be less than 5MB");
+
+function FieldError({ error }: { error?: string }) {
+  if (!error) return null;
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 text-red-600 text-xs font-ibm-plex font-medium">
+      <AlertCircle className="w-3.5 h-3.5" />
+      <span>{error}</span>
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 export default function DLRenewalPage() {
+  const router = useRouter();
   const { lang } = useLang();
   const [step, setStep] = useState<Step>("intro");
 
@@ -528,6 +562,7 @@ export default function DLRenewalPage() {
   const [loading, setLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [maskedPhone, setMaskedPhone] = useState("");
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -554,13 +589,28 @@ export default function DLRenewalPage() {
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setFormErrors({});
     clearError();
+    
+    const dlResult = dlSchema.safeParse(dlNumber);
+    const dobResult = dobSchema.safeParse(dob);
+    const captchaResult = captchaSchema.safeParse(captchaInput);
+    
+    if (!dlResult.success || !dobResult.success || !captchaResult.success) {
+      setFormErrors({
+        dlNumber: !dlResult.success ? dlResult.error.issues[0].message : "",
+        dob: !dobResult.success ? dobResult.error.issues[0].message : "",
+        captcha: !captchaResult.success ? captchaResult.error.issues[0].message : "",
+      });
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await fetch("/api/dl/verify-licence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dlNumber: dlNumber.trim(), dateOfBirth: dob }),
+        body: JSON.stringify({ dlNumber: dlResult.data, dateOfBirth: dob }),
       });
       const json = await res.json();
       if (!json.success) { setError(json.error); return; }
@@ -573,13 +623,21 @@ export default function DLRenewalPage() {
 
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setFormErrors({});
     clearError();
+    
+    const otpResult = otpSchema.safeParse(otp.join(""));
+    if (!otpResult.success) {
+      setFormErrors({ otp: otpResult.error.errors[0].message });
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await fetch("/api/dl/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dlNumber: dlNumber.trim(), dateOfBirth: dob, otp: otp.join("") }),
+        body: JSON.stringify({ dlNumber: dlNumber.trim(), dateOfBirth: dob, otp: otpResult.data }),
       });
       const json = await res.json();
       if (!json.success) { setError(json.error); return; }
@@ -602,12 +660,20 @@ export default function DLRenewalPage() {
       if (!json.success) { setError(json.error); return; }
       setApplicationId(json.data.applicationId);
       setStep("documents");
+      setTimeout(() => router.refresh(), 0);
     } catch { setError("Network error. Please try again."); }
     finally { setLoading(false); }
   }
 
   const handleUpload = useCallback(async (docType: string, file: File) => {
     if (!applicationId) return;
+    
+    const validFile = docUploadSchema.safeParse(file);
+    if (!validFile.success) {
+      setError(`Upload failed: ${validFile.error.errors[0].message}`);
+      return;
+    }
+
     try {
       const res = await fetch("/api/dl/upload-document", {
         method: "POST",
@@ -621,6 +687,7 @@ export default function DLRenewalPage() {
           next.set(docType, { fileName: file.name, uploadedAt: new Date().toISOString() });
           return next;
         });
+        clearError();
       }
     } catch { setError("Upload failed. Please try again."); }
   }, [applicationId]);
@@ -641,6 +708,7 @@ export default function DLRenewalPage() {
       const statusJson = await statusRes.json();
       if (statusJson.success) setApplication(statusJson.data.application);
       setStep("tracking");
+      setTimeout(() => router.refresh(), 0);
     } catch { setError("Payment failed. Please try again."); }
     finally { setLoading(false); }
   }
@@ -822,41 +890,41 @@ export default function DLRenewalPage() {
 
               {/* State selected — show appropriate card */}
               <AnimatePresence mode="wait">
-                {selectedState && selectedState !== LIVE_STATE && (
+                {selectedState && !LIVE_STATES.includes(selectedState) && (
                   <motion.div key="unavailable"
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
                     className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3"
                   >
                     <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-semibold text-amber-800 font-ibm-plex text-sm">Currently available for Karnataka</p>
+                      <p className="font-semibold text-amber-800 font-ibm-plex text-sm">Currently available for select states</p>
                       <p className="text-amber-700 text-xs font-ibm-plex mt-0.5">
                         <span className="font-semibold">{selectedState}</span> is not yet onboarded. We are rolling out across all states — more coming soon.
                       </p>
                     </div>
                   </motion.div>
                 )}
-                {selectedState === LIVE_STATE && (
+                {selectedState && LIVE_STATES.includes(selectedState) && (
                   <motion.div key="available"
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
                     className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex gap-3"
                   >
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-semibold text-green-800 font-ibm-plex text-sm">Karnataka — Online Renewal Available</p>
-                      <p className="text-green-700 text-xs font-ibm-plex mt-0.5">All DL services for Karnataka are fully operational through Parivahan Sewa.</p>
+                      <p className="font-semibold text-green-800 font-ibm-plex text-sm">{selectedState} — Online Renewal Available</p>
+                      <p className="text-green-700 text-xs font-ibm-plex mt-0.5">All DL services for {selectedState} are fully operational through Parivahan Sewa.</p>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
               <button
-                onClick={() => { if (selectedState === LIVE_STATE) setStep("verify"); }}
-                disabled={!selectedState || selectedState !== LIVE_STATE}
+                onClick={() => { if (LIVE_STATES.includes(selectedState)) setStep("verify"); }}
+                disabled={!selectedState || !LIVE_STATES.includes(selectedState)}
                 className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-4 h-4" />
-                {!selectedState ? "Select a state to continue" : selectedState !== LIVE_STATE ? `${selectedState} not yet available` : "Continue to DL Renewal"}
+                {!selectedState ? "Select a state to continue" : !LIVE_STATES.includes(selectedState) ? `${selectedState} not yet available` : "Continue to DL Renewal"}
               </button>
             </motion.div>
           )}
@@ -879,34 +947,26 @@ export default function DLRenewalPage() {
               </div>
               <div className="mb-6 space-y-2">
                 <p className="text-xs font-semibold text-text/50 uppercase tracking-wider font-ibm-plex mb-2">Click a demo record to auto-fill</p>
-                <button type="button"
-                  onClick={() => { setDlNumber("MH01 2011 0012345"); setDob("1975-04-12"); clearError(); }}
-                  className="w-full text-left bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/40 rounded-xl p-3.5 text-sm font-ibm-plex transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-mono font-bold text-primary">MH01 2011 0012345</span>
-                      <span className="text-text/50 mx-2">·</span>
-                      <span className="font-mono text-text/70">1975-04-12</span>
+                {mockLicences.map(licence => (
+                  <button key={licence.dlNumber} type="button"
+                    onClick={() => { setDlNumber(licence.dlNumber); setDob(licence.dateOfBirth); clearError(); }}
+                    className="w-full text-left bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/40 rounded-xl p-3.5 text-sm font-ibm-plex transition-all group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-mono font-bold text-primary">{licence.dlNumber}</span>
+                        <span className="text-text/50 mx-2">·</span>
+                        <span className="font-mono text-text/70">{licence.dateOfBirth}</span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${licence.requiresForm1A ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                        {licence.requiresForm1A ? "Form 1A required" : "Standard renewal"}
+                      </span>
                     </div>
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Form 1A required</span>
-                  </div>
-                  <p className="text-xs text-text/40 mt-1 group-hover:text-primary/60 transition">Rajesh Kumar Sharma · Mumbai</p>
-                </button>
-                <button type="button"
-                  onClick={() => { setDlNumber("DL04 2022 0098765"); setDob("2002-09-25"); clearError(); }}
-                  className="w-full text-left bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/40 rounded-xl p-3.5 text-sm font-ibm-plex transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-mono font-bold text-primary">DL04 2022 0098765</span>
-                      <span className="text-text/50 mx-2">·</span>
-                      <span className="font-mono text-text/70">2002-09-25</span>
-                    </div>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Standard renewal</span>
-                  </div>
-                  <p className="text-xs text-text/40 mt-1 group-hover:text-primary/60 transition">Priya Mehta · New Delhi</p>
-                </button>
+                    <p className="text-xs text-text/40 mt-1 group-hover:text-primary/60 transition">
+                      {licence.name} · {licence.address.split(',').slice(-1)[0].trim().split('-')[0].trim()}
+                    </p>
+                  </button>
+                ))}
               </div>
               <form onSubmit={handleVerify} className="space-y-5">
                 <div>
@@ -915,10 +975,13 @@ export default function DLRenewalPage() {
                     type="text" value={dlNumber}
                     onChange={(e) => setDlNumber(e.target.value.toUpperCase())}
                     placeholder="e.g. MH01 2011 0012345" required
-                    className="w-full px-4 py-3 rounded-xl border border-text/20 bg-[#F7F5F0] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                    className={`w-full px-4 py-3 rounded-xl border bg-[#F7F5F0] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${formErrors.dlNumber ? "border-red-400 focus:border-red-500 ring-red-400/20" : "border-text/20 focus:border-primary"}`}
                   />
+                  <FieldError error={formErrors.dlNumber} />
                 </div>
-                <DatePicker value={dob} onChange={setDob} label="Date of Birth" />
+                <div>
+                  <DatePicker value={dob} onChange={setDob} label="Date of Birth" error={formErrors.dob} />
+                </div>
 
                 {/* ── CAPTCHA ── */}
                 <div>
@@ -934,17 +997,18 @@ export default function DLRenewalPage() {
                       placeholder="Type the characters above"
                       required
                       maxLength={6}
-                      className="flex-1 px-4 py-3 rounded-xl border border-text/20 bg-[#F7F5F0] font-mono text-sm uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                      className={`flex-1 px-4 py-3 rounded-xl border bg-[#F7F5F0] font-mono text-sm uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${formErrors.captcha ? "border-red-400 focus:border-red-500 ring-red-400/20" : "border-text/20 focus:border-primary"}`}
                     />
                     <button
                       type="button"
-                      onClick={() => { setCaptchaText(generateCaptchaText()); setCaptchaInput(""); }}
+                      onClick={() => { setCaptchaText(generateCaptchaText()); setCaptchaInput(""); setFormErrors(prev => ({ ...prev, captcha: "" })); }}
                       className="px-3 py-2 rounded-xl border border-text/20 bg-[#F7F5F0] hover:bg-primary/10 transition text-primary/60 hover:text-primary"
                       title="Refresh CAPTCHA"
                     >
                       <RefreshCw className="w-4 h-4" />
                     </button>
                   </div>
+                  <FieldError error={formErrors.captcha} />
                 </div>
 
                 {/* ── Consent checkbox ── */}
@@ -1001,10 +1065,11 @@ export default function DLRenewalPage() {
                         if (val && i < 5) otpRefs.current[i + 1]?.focus();
                       }}
                       onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
-                      className="w-12 h-14 text-center text-2xl font-mono font-bold border-2 border-text/20 rounded-xl bg-[#F7F5F0] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+                      className={`w-12 h-14 text-center text-2xl font-mono font-bold border-2 rounded-xl bg-[#F7F5F0] focus:outline-none focus:ring-2 focus:ring-primary/30 transition ${formErrors.otp ? "border-red-400 focus:border-red-500 ring-red-400/20 text-red-600" : "border-text/20 focus:border-primary"}`}
                     />
                   ))}
                 </div>
+                <div className="flex justify-center -mt-2"><FieldError error={formErrors.otp} /></div>
                 <button type="submit" disabled={loading || otp.join("").length < 6}
                   className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60">
                   {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
@@ -1252,17 +1317,27 @@ function DocUploadRow({
   label: string;
   hint: string;
   uploadInfo: { fileName: string; uploadedAt: string } | null;
-  onUpload: (file: File) => void;
+  onUpload: (file: File) => Promise<void>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const uploaded = !!uploadInfo;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      await onUpload(file);
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className={`p-4 rounded-xl border transition-all ${uploaded ? "border-green-300 bg-green-50" : "border-text/15 bg-[#F7F5F0] hover:border-primary/40"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${uploaded ? "bg-green-500" : "bg-primary/10"}`}>
-            {uploaded ? <CheckCircle className="w-4 h-4 text-white" /> : <Upload className="w-4 h-4 text-primary" />}
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUploading ? "bg-primary/20" : uploaded ? "bg-green-500" : "bg-primary/10"}`}>
+            {isUploading ? <RefreshCw className="w-4 h-4 text-primary animate-spin" /> : uploaded ? <CheckCircle className="w-4 h-4 text-white" /> : <Upload className="w-4 h-4 text-primary" />}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold font-ibm-plex text-text">{label}</p>
@@ -1270,7 +1345,7 @@ function DocUploadRow({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-          {uploaded && (
+          {uploaded && !isUploading && (
             <button
               onClick={() => inputRef.current?.click()}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold font-ibm-plex border border-text/20 bg-white text-text/70 hover:border-primary/40 hover:text-primary transition"
@@ -1279,9 +1354,9 @@ function DocUploadRow({
             </button>
           )}
           {!uploaded && (
-            <button onClick={() => inputRef.current?.click()}
-              className="px-4 py-2 rounded-lg text-sm font-semibold font-ibm-plex bg-primary text-white hover:bg-primary/90 transition">
-              Upload
+            <button onClick={() => inputRef.current?.click()} disabled={isUploading}
+              className="px-4 py-2 rounded-lg text-sm font-semibold font-ibm-plex bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
+              {isUploading ? "Uploading..." : "Upload"}
             </button>
           )}
         </div>
@@ -1298,9 +1373,7 @@ function DocUploadRow({
           </span>
         </div>
       )}
-      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
-        onChange={(e) => { const file = e.target.files?.[0]; if (file) { onUpload(file); e.target.value = ""; } }}
-      />
+      <input type="file" ref={inputRef} className="hidden" onChange={handleFileChange} />
     </div>
   );
 }

@@ -31,11 +31,20 @@ export async function POST(req: NextRequest) {
     // Clear OTP after successful verification
     getOtpStore().delete(licence.dlNumber);
 
-    // Return full licence details for the review screen
-    return NextResponse.json({
+    // Set a mock session cookie
+    const response = NextResponse.json({
       success: true,
       data: { licence },
     });
+    
+    response.cookies.set("mockSessionDl", licence.dlNumber, {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
+
+    return response;
   } catch {
     return NextResponse.json({ success: false, error: "Server error." }, { status: 500 });
   }

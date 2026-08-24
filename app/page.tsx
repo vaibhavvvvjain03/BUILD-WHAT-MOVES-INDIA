@@ -92,6 +92,7 @@ export default function Home() {
         </p>
         <Link
           href="/services/dl-renewal"
+          prefetch={true}
           className="inline-flex items-center gap-2 bg-accent text-primary font-semibold px-8 py-4 rounded-full text-lg transition-transform hover:scale-105 active:scale-95 shadow-lg"
         >
           {t(lang, "hero_cta")}
@@ -125,6 +126,7 @@ export default function Home() {
               <Link
                 key={item.key}
                 href={item.href}
+                prefetch={true}
                 className={`group flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all text-center gap-3 ${
                   item.accent
                     ? "border-accent bg-accent/10 hover:bg-accent/20 hover:border-accent"
@@ -198,6 +200,7 @@ export default function Home() {
               <Link
                 key={task.label}
                 href={task.href}
+                prefetch={true}
                 className="group flex items-center gap-4 bg-white p-5 rounded-2xl shadow-sm hover:shadow-md border border-text/5 hover:border-primary/20 transition-all"
               >
                 <div className="w-11 h-11 bg-primary/8 text-primary rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">

@@ -2,12 +2,21 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, X, ChevronDown, FileBadge, CarFront, Banknote, FileText, Languages } from "lucide-react";
+import { Search, X, ChevronDown, FileBadge, CarFront, Banknote, FileText, Languages, Bot, ChevronRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/components/LangContext";
 import { t, Lang, LANGUAGE_NAMES } from "@/lib/translations";
 
 import { serviceCategories, getAllServices } from "@/lib/serviceCatalog";
+import { matchServiceIntent, getClarifyingFollowup, ServiceMatchResult } from "@/lib/vaniServiceNavigator";
+
+type ChatMessage = {
+  id: string;
+  role: "user" | "vani";
+  text?: string;
+  isTyping?: boolean;
+  match?: ServiceMatchResult;
+};
 
 const ALL_SECTIONS = serviceCategories.map(category => ({
   id: category.toLowerCase().replace(/\s+/g, '-'),
@@ -26,6 +35,19 @@ export default function Navbar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<"browse" | "describe">("browse");
+  const [describeInput, setDescribeInput] = useState("");
+  const [matchResult, setMatchResult] = useState<ServiceMatchResult | null>(null);
+  
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
+    {
+      id: "init",
+      role: "vani",
+      text: "Hi, I'm VANI. Tell me what you need help with — for example, 'I bought a used car' or 'my licence expired.'"
+    }
+  ]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  
   const langDropdownRef = useRef<HTMLDivElement>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
@@ -70,6 +92,13 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ""; };
   }, [isModalOpen]);
 
+  // Scroll to bottom of chat
+  useEffect(() => {
+    if (activeTab === "describe") {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatHistory, activeTab]);
+
   // Filter sections
   const filteredSections = useMemo(() => {
     if (!searchTerm.trim()) return ALL_SECTIONS;
@@ -93,6 +122,36 @@ export default function Navbar() {
     setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (activeTab === "describe" && describeInput.trim()) {
+      const userText = describeInput.trim();
+      const userId = Date.now().toString();
+      
+      setChatHistory(prev => [...prev, { id: userId, role: "user", text: userText }]);
+      setDescribeInput("");
+
+      // Add typing indicator
+      const typingId = userId + "_typing";
+      setChatHistory(prev => [...prev, { id: typingId, role: "vani", isTyping: true }]);
+
+      setTimeout(() => {
+        let newMatch: ServiceMatchResult;
+        if (matchResult && matchResult.confidence !== "high") {
+          newMatch = getClarifyingFollowup(matchResult, userText);
+        } else {
+          newMatch = matchServiceIntent(userText);
+        }
+        setMatchResult(newMatch);
+
+        setChatHistory(prev => {
+          const filtered = prev.filter(m => m.id !== typingId);
+          return [...filtered, { id: Date.now().toString(), role: "vani", match: newMatch }];
+        });
+      }, 500);
+    }
+  };
+
   return (
     <div className="fixed top-4 left-4 right-4 z-50 flex justify-center">
       <nav className="relative w-full max-w-[95%] xl:max-w-7xl bg-primary text-white rounded-3xl xl:rounded-full px-4 py-3 xl:px-6 xl:py-3 shadow-lg flex flex-col xl:flex-row xl:items-center justify-between gap-3 xl:gap-0">
@@ -108,7 +167,7 @@ export default function Navbar() {
               return (
                 <button
                   key={item.name}
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => { setActiveTab("browse"); setIsModalOpen(true); }}
                   className="px-3 py-1.5 md:px-4 md:py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors text-white hover:bg-white/10 hover:text-white flex items-center gap-2"
                 >
                   <Search className="w-4 h-4 text-white/70" />
@@ -131,8 +190,19 @@ export default function Navbar() {
             );
           })}
 
+          {/* ── Ask VANI Button ── */}
+          <button
+            onClick={() => { setActiveTab("describe"); setIsModalOpen(true); }}
+            title="Ask VANI"
+            className="group relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#f3b82a] text-black shadow-[0_0_12px_rgba(243,184,42,0.5)] hover:shadow-[0_0_20px_rgba(243,184,42,0.8)] transition-all ml-1 md:ml-2 flex-shrink-0"
+          >
+            {/* Glow / Pulse effect */}
+            <div className="absolute inset-0 rounded-full bg-[#f3b82a] animate-ping opacity-30" />
+            <Sparkles className="w-4 h-4 md:w-5 md:h-5 relative z-10 transition-transform group-hover:scale-110" />
+          </button>
+
           {/* ── Language dropdown ── */}
-          <div className="relative ml-2" ref={langDropdownRef}>
+          <div className="relative ml-2 flex-shrink-0" ref={langDropdownRef}>
             <button
               onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
               title="Change language"
@@ -196,124 +266,208 @@ export default function Navbar() {
                   {/* Search Type Toggle */}
                   <div className="flex bg-text/5 p-1 rounded-lg w-fit">
                     <button 
-                      className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white shadow-sm text-primary"
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "browse" ? "bg-white shadow-sm text-primary" : "text-text/60 hover:text-text"}`}
+                      onClick={() => { setActiveTab("browse"); }}
                     >
                       Browse & Search
                     </button>
                     <button 
-                      className="px-3 py-1.5 text-xs font-semibold rounded-md text-text/60 hover:text-text transition-colors"
-                      onClick={() => alert("Natural Language Search (Describe what you need) - AI Feature Placeholder")}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "describe" ? "bg-white shadow-sm text-primary" : "text-text/60 hover:text-text"}`}
+                      onClick={() => { setActiveTab("describe"); }}
                     >
                       Describe what you need ✨
                     </button>
                   </div>
                   
-                  <div className="flex items-center px-4 py-3 bg-background rounded-xl border-2 border-transparent focus-within:border-accent transition-colors shadow-inner">
+                  <form onSubmit={handleSearchSubmit} className="flex items-center px-4 py-3 bg-background rounded-xl border-2 border-transparent focus-within:border-accent transition-colors shadow-inner">
                     <Search className="w-5 h-5 text-text/40 mr-3 shrink-0" />
                     <input
                       type="text"
                       autoFocus
-                      placeholder="Search by service name or category..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder={activeTab === "browse" ? "Search by service name or category..." : "E.g. I bought a second-hand car..."}
+                      value={activeTab === "browse" ? searchTerm : describeInput}
+                      onChange={(e) => {
+                        if (activeTab === "browse") setSearchTerm(e.target.value);
+                        else setDescribeInput(e.target.value);
+                      }}
                       className="flex-1 bg-transparent text-base md:text-lg font-medium text-text outline-none placeholder:text-text/30"
                     />
-                    {searchTerm && (
-                      <button onClick={() => setSearchTerm("")} className="p-1 hover:bg-text/5 rounded-full text-text/40 hover:text-text mr-2 transition-colors">
+                    {(searchTerm || describeInput) && (
+                      <button type="button" onClick={() => activeTab === "browse" ? setSearchTerm("") : setDescribeInput("")} className="p-1 hover:bg-text/5 rounded-full text-text/40 hover:text-text mr-2 transition-colors">
                         <X className="w-4 h-4" />
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => setIsModalOpen(false)}
                       className="hidden sm:block px-2.5 py-1 text-xs font-semibold bg-white border border-text/10 text-text/50 rounded-md shadow-sm transition-colors"
                     >
                       ESC
                     </button>
-                  </div>
+                  </form>
                 </div>
 
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-hide">
-                {/* Most Used Shortcuts (hidden if searching) */}
-                {!searchTerm.trim() && (
-                  <div className="mb-8">
-                    <h3 className="text-xs font-bold text-text/40 uppercase tracking-wider mb-4 font-inter px-2">Most Used</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <Link href="/services/dl-renewal" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
-                        <FileBadge className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Renew Licence</span>
-                      </Link>
-                      <Link href="/services/transfer-ownership" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
-                        <CarFront className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Transfer Vehicle</span>
-                      </Link>
-                      <Link href="/services/pay-challan" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
-                        <Banknote className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Pay Challan</span>
-                      </Link>
-                      <Link href="/track-application" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
-                        <FileText className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Track App</span>
-                      </Link>
+                {activeTab === "browse" ? (
+                  <>
+                    {/* Most Used Shortcuts (hidden if searching) */}
+                    {!searchTerm.trim() && (
+                      <div className="mb-8">
+                        <h3 className="text-xs font-bold text-text/40 uppercase tracking-wider mb-4 font-inter px-2">Most Used</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <Link href="/services/dl-renewal" prefetch={true} onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
+                            <FileBadge className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
+                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Renew Licence</span>
+                          </Link>
+                          <Link href="/services/transfer-ownership" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
+                            <CarFront className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
+                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Transfer Vehicle</span>
+                          </Link>
+                          <Link href="/services/pay-challan" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
+                            <Banknote className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
+                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Pay Challan</span>
+                          </Link>
+                          <Link href="/track-application" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
+                            <FileText className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
+                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Track App</span>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Service List */}
+                    <div>
+                      <h3 className="text-xs font-bold text-text/40 uppercase tracking-wider mb-3 font-inter px-2">
+                        {searchTerm.trim() ? "Search Results" : "All Services"}
+                      </h3>
+                      {filteredSections.length === 0 ? (
+                        <div className="text-center py-12 text-text/50 font-ibm-plex">
+                          No services found matching &quot;{searchTerm}&quot;
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {filteredSections.map((section) => {
+                            const isExpanded = expandedSections[section.id];
+                            return (
+                              <div key={section.id} className="bg-white rounded-2xl overflow-hidden border border-text/5 shadow-sm">
+                                <button
+                                  onClick={() => toggleSection(section.id)}
+                                  className="w-full flex items-center justify-between p-4 bg-white hover:bg-text/[0.02] transition-colors"
+                                >
+                                  <span className="font-bold text-primary font-inter">{section.title}</span>
+                                  <div className={`p-1 rounded-full transition-colors ${isExpanded ? "bg-primary/10 text-primary" : "text-text/40"}`}>
+                                    <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                                  </div>
+                                </button>
+                                <AnimatePresence>
+                                  {isExpanded && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                    >
+                                      <div className="px-2 pb-3 pt-0">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                                          {section.items.map((item) => (
+                                            <Link
+                                              key={item.name}
+                                              href={item.href}
+                                              onClick={() => setIsModalOpen(false)}
+                                              className="flex items-center px-4 py-3 rounded-xl hover:bg-accent/10 hover:text-primary transition-colors text-text/80 text-sm font-medium group"
+                                            >
+                                              {item.name}
+                                            </Link>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full min-h-[40vh] flex flex-col justify-end">
+                    <div className="space-y-4 pb-4">
+                      {chatHistory.map(msg => (
+                        <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                          {msg.role === "vani" && (
+                            <div className="flex items-center gap-1.5 mb-1.5 pl-1">
+                              <div className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center">
+                                <Bot className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="text-xs font-bold text-text/50">VANI</span>
+                            </div>
+                          )}
+                          <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
+                            msg.role === "user" 
+                              ? "bg-primary text-white rounded-tr-sm" 
+                              : "bg-white border border-text/10 shadow-sm rounded-tl-sm text-text"
+                          }`}>
+                            {msg.isTyping ? (
+                              <div className="flex gap-1.5 items-center h-5 px-1">
+                                <motion.div className="w-1.5 h-1.5 bg-text/30 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} />
+                                <motion.div className="w-1.5 h-1.5 bg-text/30 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} />
+                                <motion.div className="w-1.5 h-1.5 bg-text/30 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} />
+                              </div>
+                            ) : msg.text ? (
+                              <p className="text-sm leading-relaxed">{msg.text}</p>
+                            ) : msg.match ? (
+                              <div className="space-y-3">
+                                 {msg.match.confidence === "high" && msg.match.matchedService ? (
+                                    <div>
+                                      <h4 className="font-bold text-primary mb-1">{msg.match.matchedService}</h4>
+                                      <p className="text-sm text-text/80 mb-4">{msg.match.explanation}</p>
+                                      {(() => {
+                                        const service = getAllServices().find(s => s.name === msg.match?.matchedService);
+                                        return service ? (
+                                          <Link href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="inline-flex items-center px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/20 transition-colors">
+                                            Go to Service <ChevronRight className="w-4 h-4 ml-1" />
+                                          </Link>
+                                        ) : null;
+                                      })()}
+                                    </div>
+                                 ) : (
+                                    <div>
+                                      {msg.match.matchedService && (
+                                        <div className="mb-3 pb-3 border-b border-text/5">
+                                          <h4 className="font-semibold text-text/80 text-sm mb-1">{msg.match.matchedService} (Tentative)</h4>
+                                          <p className="text-xs text-text/60">{msg.match.explanation}</p>
+                                        </div>
+                                      )}
+                                      <p className="text-sm font-medium text-text">{msg.match.clarifyingQuestion}</p>
+                                    </div>
+                                 )}
+                                 {msg.match.alternativeMatches && msg.match.alternativeMatches.length > 0 && (
+                                    <div className="pt-3 border-t border-text/5 mt-3">
+                                      <p className="text-xs font-semibold text-text/50 mb-2">Alternatively:</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {msg.match.alternativeMatches.map(alt => {
+                                          const service = getAllServices().find(s => s.name === alt);
+                                          return service ? (
+                                             <Link key={alt} href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="px-2.5 py-1.5 bg-text/5 hover:bg-text/10 rounded-md text-xs font-medium text-text transition-colors">
+                                               {alt}
+                                             </Link>
+                                          ) : null;
+                                        })}
+                                      </div>
+                                    </div>
+                                 )}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                      <div ref={chatEndRef} />
                     </div>
                   </div>
                 )}
-
-                {/* Service List */}
-                <div>
-                  <h3 className="text-xs font-bold text-text/40 uppercase tracking-wider mb-3 font-inter px-2">
-                    {searchTerm.trim() ? "Search Results" : "All Services"}
-                  </h3>
-                  {filteredSections.length === 0 ? (
-                    <div className="text-center py-12 text-text/50 font-ibm-plex">
-                      No services found matching &quot;{searchTerm}&quot;
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {filteredSections.map((section) => {
-                        const isExpanded = expandedSections[section.id];
-                        return (
-                          <div key={section.id} className="bg-white rounded-2xl overflow-hidden border border-text/5 shadow-sm">
-                            <button
-                              onClick={() => toggleSection(section.id)}
-                              className="w-full flex items-center justify-between p-4 bg-white hover:bg-text/[0.02] transition-colors"
-                            >
-                              <span className="font-bold text-primary font-inter">{section.title}</span>
-                              <div className={`p-1 rounded-full transition-colors ${isExpanded ? "bg-primary/10 text-primary" : "text-text/40"}`}>
-                                <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                              </div>
-                            </button>
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                >
-                                  <div className="px-2 pb-3 pt-0">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                                      {section.items.map((item) => (
-                                        <Link
-                                          key={item.name}
-                                          href={item.href}
-                                          onClick={() => setIsModalOpen(false)}
-                                          className="flex items-center px-4 py-3 rounded-xl hover:bg-accent/10 hover:text-primary transition-colors text-text/80 text-sm font-medium group"
-                                        >
-                                          {item.name}
-                                        </Link>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
               </div>
             </motion.div>
           </div>

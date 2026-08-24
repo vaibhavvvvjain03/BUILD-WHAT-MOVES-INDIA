@@ -43,21 +43,40 @@ export interface ServiceDetail {
 }
 
 export const serviceCategories = [
-  'Driving Licence',
-  'Vehicle & RC',
+  'Driving Licence Services',
+  'Vehicle & RC Services',
   'Tax & Payments',
-  'Permits & Commercial',
-  'Appointments',
-  'Applications & Documents',
+  'Permits & Fitness',
   'Other Services',
 ];
+
+const generatePreview = (id: string, name: string, category: string, shortDescription: string): ServiceDetail => ({
+  id,
+  name,
+  shortDescription,
+  category,
+  eligibility: ['Standard eligibility rules apply'],
+  documentsRequired: [{ name: 'Standard Documents', type: 'required' }],
+  fees: { amount: 'Variable', description: 'Subject to specific service rules' },
+  estimatedTime: 'Approx. 10-15 minutes',
+  rtoVisitRequired: 'may-require-visit',
+  regionalAvailability: { status: 'available' },
+  prerequisites: ['Ensure your mobile number is linked to Aadhaar'],
+  processSteps: [
+    { id: 1, title: 'Authentication', description: 'Authenticate via Aadhaar.' },
+    { id: 2, title: 'Fill Form', description: 'Provide necessary details.' },
+    { id: 3, title: 'Upload Docs', description: 'Upload required documents.' },
+    { id: 4, title: 'Payment', description: 'Pay the processing fee.' },
+  ],
+  availabilityState: 'preview',
+});
 
 export const serviceCatalog: Record<string, ServiceDetail> = {
   'dl-renewal': {
     id: 'dl-renewal',
     name: 'Renew Driving Licence',
     shortDescription: 'Apply for the renewal of your existing Driving Licence online.',
-    category: 'Driving Licence',
+    category: 'Driving Licence Services',
     eligibility: [
       'Holder of a valid Indian Driving Licence',
       'Licence is expired or expiring within 1 year',
@@ -89,9 +108,9 @@ export const serviceCatalog: Record<string, ServiceDetail> = {
   },
   'transfer-ownership': {
     id: 'transfer-ownership',
-    name: 'Transfer Vehicle Ownership',
+    name: 'Transfer of Ownership',
     shortDescription: 'Transfer the ownership of a vehicle to another person.',
-    category: 'Vehicle & RC',
+    category: 'Vehicle & RC Services',
     eligibility: [
       'Registered owner of the vehicle',
       'Buyer and seller must have valid ID proofs',
@@ -126,7 +145,7 @@ export const serviceCatalog: Record<string, ServiceDetail> = {
   },
   'pay-challan': {
     id: 'pay-challan',
-    name: 'Pay Traffic Challan',
+    name: 'Pay Traffic Challan (e-Challan)',
     shortDescription: 'Check and pay pending traffic fines against your vehicle or licence.',
     category: 'Tax & Payments',
     eligibility: [
@@ -156,7 +175,7 @@ export const serviceCatalog: Record<string, ServiceDetail> = {
     id: 'duplicate-rc',
     name: 'Duplicate RC',
     shortDescription: 'Apply for a duplicate Registration Certificate if lost or damaged.',
-    category: 'Vehicle & RC',
+    category: 'Vehicle & RC Services',
     eligibility: [
       'Registered owner of the vehicle',
       'RC must be lost, torn, or mutilated',
@@ -184,17 +203,16 @@ export const serviceCatalog: Record<string, ServiceDetail> = {
     ],
     availabilityState: 'preview',
   },
-  'change-address': {
-    id: 'change-address',
-    name: 'Change of Address in DL/RC',
-    shortDescription: 'Update your residential address in your Driving Licence or RC.',
-    category: 'Driving Licence',
+  'change-address-dl': {
+    id: 'change-address-dl',
+    name: 'Change of Address (DL)',
+    shortDescription: 'Update your residential address in your Driving Licence.',
+    category: 'Driving Licence Services',
     eligibility: [
-      'Holder of valid DL or RC',
+      'Holder of valid DL',
     ],
     documentsRequired: [
       { name: 'New Address Proof', type: 'required' },
-      { name: 'Form 33', type: 'conditional', condition: 'Required for RC address change' },
     ],
     fees: { amount: 'Variable', calculatedByBackend: true },
     estimatedTime: 'Approx. 15 minutes',
@@ -206,14 +224,51 @@ export const serviceCatalog: Record<string, ServiceDetail> = {
       'Ensure the new address proof matches exactly with your inputted address',
     ],
     processSteps: [
-      { id: 1, title: 'Select Document', description: 'Choose DL or RC for update.' },
+      { id: 1, title: 'Select Document', description: 'Choose DL for update.' },
       { id: 2, title: 'Enter Details', description: 'Provide new address details.' },
       { id: 3, title: 'Upload Proof', description: 'Upload valid address proof.' },
       { id: 4, title: 'Payment', description: 'Pay the update fee.' },
     ],
     availabilityState: 'preview',
   },
+  
+  // Driving Licence Services (Generated Previews)
+  'learners-licence': generatePreview('learners-licence', 'Apply for Learner\'s Licence', 'Driving Licence Services', 'Start your driving journey by applying for a new Learner\'s Licence.'),
+  'driving-licence': generatePreview('driving-licence', 'Apply for Driving Licence', 'Driving Licence Services', 'Apply for a permanent Driving Licence after completing your learning period.'),
+  'duplicate-dl': generatePreview('duplicate-dl', 'Duplicate Driving Licence', 'Driving Licence Services', 'Apply for a duplicate Driving Licence if yours is lost or damaged.'),
+  'add-class-of-vehicle': generatePreview('add-class-of-vehicle', 'Add Vehicle Class to Licence', 'Driving Licence Services', 'Endorse a new class of vehicle on your existing Driving Licence.'),
+  'international-driving-permit': generatePreview('international-driving-permit', 'International Driving Permit', 'Driving Licence Services', 'Apply for a permit to drive vehicles in foreign countries.'),
+  'dl-extract': generatePreview('dl-extract', 'Driving Licence Status/Extract', 'Driving Licence Services', 'View or download an extract of your Driving Licence details.'),
+  'driving-school-licence': generatePreview('driving-school-licence', 'Driving School Licence Application', 'Driving Licence Services', 'Apply for or renew a licence to operate a motor driving school.'),
+
+  // Vehicle & RC Services (Generated Previews)
+  'new-vehicle-registration': generatePreview('new-vehicle-registration', 'New Vehicle Registration', 'Vehicle & RC Services', 'Register a newly purchased vehicle with the RTO.'),
+  'rc-renewal': generatePreview('rc-renewal', 'RC Renewal', 'Vehicle & RC Services', 'Renew your vehicle\'s Registration Certificate after 15 years.'),
+  'change-address-rc': generatePreview('change-address-rc', 'Change of Address (RC)', 'Vehicle & RC Services', 'Update the address on your vehicle\'s Registration Certificate.'),
+  'hypothecation': generatePreview('hypothecation', 'Hypothecation Addition/Termination', 'Vehicle & RC Services', 'Add or remove a loan lien (hypothecation) on your vehicle.'),
+  'noc': generatePreview('noc', 'NOC (No Objection Certificate)', 'Vehicle & RC Services', 'Apply for an NOC to move your vehicle to another state.'),
+  'hsrp': generatePreview('hsrp', 'HSRP Number Plate Application', 'Vehicle & RC Services', 'Apply for a High Security Registration Plate for your vehicle.'),
+  'vehicle-details': generatePreview('vehicle-details', 'Vehicle/Owner Details Lookup', 'Vehicle & RC Services', 'Search and view details of a registered vehicle and its owner.'),
+
+  // Tax & Payments (Generated Previews)
+  'road-tax': generatePreview('road-tax', 'Road Tax Payment', 'Tax & Payments', 'Pay your vehicle\'s road tax online.'),
+  'challan-status': generatePreview('challan-status', 'Check Challan Status', 'Tax & Payments', 'Check the status of your traffic violation challans.'),
+  'fee-reference': generatePreview('fee-reference', 'Fee & User Charges Reference', 'Tax & Payments', 'View the official fee structure for various RTO services.'),
+
+  // Permits & Fitness (Generated Previews)
+  'national-permit': generatePreview('national-permit', 'National Permit', 'Permits & Fitness', 'Apply for a permit to operate commercial vehicles across India.'),
+  'state-permit': generatePreview('state-permit', 'State Permit', 'Permits & Fitness', 'Apply for a permit to operate commercial vehicles within a state.'),
+  'permit-renewal': generatePreview('permit-renewal', 'Permit Renewal', 'Permits & Fitness', 'Renew your existing commercial vehicle permits.'),
+  'fitness-certificate': generatePreview('fitness-certificate', 'Vehicle Fitness Certificate', 'Permits & Fitness', 'Apply for or renew a fitness certificate for your vehicle.'),
+  'fitness-inspection': generatePreview('fitness-inspection', 'Fitness Inspection Scheduling', 'Permits & Fitness', 'Schedule an appointment for your vehicle\'s fitness inspection.'),
+
+  // Other Services (Generated Previews)
+  'fancy-number': generatePreview('fancy-number', 'Fancy Number Allocation/Booking', 'Other Services', 'Participate in auction or book a fancy registration number.'),
+  'pucc': generatePreview('pucc', 'PUCC (Pollution Under Control Certificate)', 'Other Services', 'Check and download your vehicle\'s pollution certificate details.'),
+  'rto-appointment': generatePreview('rto-appointment', 'RTO Appointment Booking', 'Other Services', 'Book an appointment to visit your local RTO office.'),
+  'digital-document': generatePreview('digital-document', 'Digital Document Access', 'Other Services', 'Link and access your documents via DigiLocker or mParivahan.'),
 };
+
 
 export function getServicesByCategory(category: string): ServiceDetail[] {
   return Object.values(serviceCatalog).filter(s => s.category === category);

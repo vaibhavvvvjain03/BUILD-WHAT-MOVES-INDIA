@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { findLicence, getRenewalStore, generateApplicationId } from "@/lib/mockData";
 import { RenewalApplication } from "@/lib/types";
 
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
     };
 
     getRenewalStore().set(applicationId, application);
+    revalidatePath("/my-parivahan");
 
     return NextResponse.json({
       success: true,
