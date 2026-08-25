@@ -22,12 +22,12 @@ const INTENT_ITEMS = [
 
 // ── Popular Tasks (same data as command palette "Most Used") ──────────────────
 const POPULAR_TASKS = [
-  { label: "Renew Driving Licence",  href: "/services/dl-renewal",   icon: FileBadge,  tag: "LIVE" },
-  { label: "Pay eChallan",           href: "/services/pay-challan",  icon: Banknote,   tag: null },
-  { label: "Track Application",      href: "/track-application",  icon: FileText,   tag: null },
-  { label: "Transfer Vehicle",       href: "/services/transfer-ownership",  icon: CarFront,   tag: null },
-  { label: "Duplicate RC",           href: "/services/duplicate-rc",  icon: FileSearch, tag: null },
-  { label: "Change Address",         href: "/services/change-address",  icon: FileBadge,  tag: null },
+  { key: "pop_renew",  href: "/services/dl-renewal",   icon: FileBadge,  tag: "LIVE" },
+  { key: "pop_challan",           href: "/services/pay-challan",  icon: Banknote,   tag: null },
+  { key: "pop_track",      href: "/track-application",  icon: FileText,   tag: null },
+  { key: "pop_transfer",       href: "/services/transfer-ownership",  icon: CarFront,   tag: null },
+  { key: "pop_rc",           href: "/services/duplicate-rc",  icon: FileSearch, tag: null },
+  { key: "pop_address",         href: "/services/change-address",  icon: FileBadge,  tag: null },
 ];
 
 export default function Home() {
@@ -70,7 +70,7 @@ export default function Home() {
           <motion.div layout className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2">
             <motion.span layout>{t(lang, "hero_renew")}</motion.span>
             <motion.span layout className="relative flex justify-center items-center text-accent overflow-visible">
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence mode="wait">
                 <motion.span
                   key={`${lang}-${index}`}
                   layout
@@ -106,7 +106,7 @@ export default function Home() {
           {t(lang, "intent_heading")}
         </h2>
         <p className="text-center text-text/60 font-ibm-plex mb-8 text-sm">
-          Choose your goal and we&apos;ll take you straight there.
+          {t(lang, "intent_subtext")}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {INTENT_ITEMS.map((item) => {
@@ -148,9 +148,9 @@ export default function Home() {
             <div className="w-12 h-12 bg-success/20 text-primary rounded-2xl flex items-center justify-center mb-6">
               <Clock className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold font-inter mb-3 text-primary">No more RTO visits</h3>
+            <h3 className="text-xl font-bold font-inter mb-3 text-primary">{t(lang, "why_easier_1_title")}</h3>
             <p className="text-text/70">
-              Skip the long queues. Complete your application entirely online and upload documents securely from your home.
+              {t(lang, "why_easier_1_desc")}
             </p>
           </div>
 
@@ -158,9 +158,9 @@ export default function Home() {
             <div className="w-12 h-12 bg-success/20 text-primary rounded-2xl flex items-center justify-center mb-6">
               <CheckCircle className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold font-inter mb-3 text-primary">Clear instructions</h3>
+            <h3 className="text-xl font-bold font-inter mb-3 text-primary">{t(lang, "why_easier_2_title")}</h3>
             <p className="text-text/70">
-              We guide you step-by-step. Know exactly which forms to fill and which documents are required before you start.
+              {t(lang, "why_easier_2_desc")}
             </p>
           </div>
 
@@ -168,9 +168,9 @@ export default function Home() {
             <div className="w-12 h-12 bg-success/20 text-primary rounded-2xl flex items-center justify-center mb-6">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold font-inter mb-3 text-primary">Transparent tracking</h3>
+            <h3 className="text-xl font-bold font-inter mb-3 text-primary">{t(lang, "why_easier_3_title")}</h3>
             <p className="text-text/70">
-              Track your application status in real-time. Receive instant notifications via SMS when your licence is approved.
+              {t(lang, "why_easier_3_desc")}
             </p>
           </div>
         </div>
@@ -190,7 +190,7 @@ export default function Home() {
             className="flex items-center gap-2 text-sm font-semibold text-primary/60 hover:text-primary transition-colors font-ibm-plex"
           >
             <Search className="w-4 h-4" />
-            Search all services
+            {t(lang, "pop_search_all")}
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -198,7 +198,7 @@ export default function Home() {
             const Icon = task.icon;
             return (
               <Link
-                key={task.label}
+                key={task.key}
                 href={task.href}
                 prefetch={true}
                 className="group flex items-center gap-4 bg-white p-5 rounded-2xl shadow-sm hover:shadow-md border border-text/5 hover:border-primary/20 transition-all"
@@ -207,7 +207,7 @@ export default function Home() {
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <span className="font-semibold text-text group-hover:text-primary transition-colors font-ibm-plex text-sm">{task.label}</span>
+                  <span className="font-semibold text-text group-hover:text-primary transition-colors font-ibm-plex text-sm">{t(lang, task.key)}</span>
                   {task.tag && (
                     <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">{task.tag}</span>
                   )}

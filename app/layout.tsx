@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import DisclaimerTicker from "@/components/DisclaimerTicker";
 import { LangProvider } from "@/components/LangContext";
+import { SessionProvider } from "@/lib/sessionContext";
 
 export const metadata: Metadata = {
   title: "Parivahan Sewa",
@@ -20,14 +21,16 @@ export default function RootLayout({
       <body
         className={`font-ibm-plex bg-background text-text antialiased flex flex-col min-h-screen pb-10`}
       >
-        <LangProvider>
-          <Navbar />
-          <main className="flex-1 pt-32">
-            {children}
-          </main>
-          <Footer />
-          <DisclaimerTicker />
-        </LangProvider>
+        <SessionProvider>
+          <LangProvider>
+            <Navbar />
+            <main className="flex-1 pt-32">
+              {children}
+            </main>
+            <Footer />
+            <DisclaimerTicker />
+          </LangProvider>
+        </SessionProvider>
       </body>
     </html>
   );

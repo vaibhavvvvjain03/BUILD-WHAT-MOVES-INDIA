@@ -5,8 +5,11 @@ import Link from "next/link";
 import { Search, Info, SearchX, ArrowLeft } from "lucide-react";
 import ApplicationDetailView from "@/components/ApplicationDetailView";
 import { RenewalApplication } from "@/lib/types";
-
+import { useLang } from "@/components/LangContext";
+import { t } from "@/lib/translations";
+import ThemedLoader from "@/components/ThemedLoader";
 export default function TrackApplicationPage() {
+  const { lang } = useLang();
   const [appNumber, setAppNumber] = useState("");
   const [dob, setDob] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -46,12 +49,12 @@ export default function TrackApplicationPage() {
       <div className="bg-primary text-white py-16 mt-20">
         <div className="max-w-4xl mx-auto px-6">
           <Link href="/" className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-6 text-sm font-semibold">
-            <ArrowLeft className="w-4 h-4" /> Back to Home
+            <ArrowLeft className="w-4 h-4" /> {t(lang, "track_back_home") || "Back to Home"}
           </Link>
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold font-inter mb-4">Track Application</h1>
+            <h1 className="text-4xl md:text-5xl font-bold font-inter mb-4">{t(lang, "track_title") || "Track Application"}</h1>
             <p className="text-white/80 text-lg max-w-2xl mx-auto">
-              Enter your application details below to check the real-time status of your request.
+              {t(lang, "track_subtitle") || "Enter your application details below to check the real-time status of your request."}
             </p>
           </div>
         </div>
@@ -65,24 +68,24 @@ export default function TrackApplicationPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="appNumber" className="block text-sm font-semibold text-text mb-2 font-inter">
-                    Application Number *
+                    {t(lang, "track_app_no") || "Application Number *"}
                   </label>
                   <input
                     type="text"
                     id="appNumber"
                     value={appNumber}
                     onChange={(e) => setAppNumber(e.target.value)}
-                    placeholder="e.g. PSW-2026-123456"
+                    placeholder={t(lang, "track_app_no_placeholder") || "e.g. PSW-2026-123456"}
                     className="w-full bg-bg border border-text/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                   />
                   <p className="text-xs text-text/50 mt-2 flex items-center gap-1">
-                    <Info className="w-3 h-3" /> Note: This is the public tracking portal.
+                    <Info className="w-3 h-3" /> {t(lang, "track_public_note") || "Note: This is the public tracking portal."}
                   </p>
                 </div>
                 <div>
                   <label htmlFor="dob" className="block text-sm font-semibold text-text mb-2 font-inter">
-                    Date of Birth (Optional)
+                    {t(lang, "track_dob_opt") || "Date of Birth (Optional)"}
                   </label>
                   <input
                     type="date"
@@ -102,13 +105,13 @@ export default function TrackApplicationPage() {
                 >
                   {isSearching ? (
                     <span className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Searching...
+                      <ThemedLoader size="sm" className="text-white" />
+                      {t(lang, "track_searching") || "Searching..."}
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
                       <Search className="w-5 h-5" />
-                      Track Status
+                      {t(lang, "track_btn") || "Track Status"}
                     </span>
                   )}
                 </button>
@@ -122,9 +125,9 @@ export default function TrackApplicationPage() {
               <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <SearchX className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold font-inter text-red-700 mb-2">Application Not Found</h3>
+              <h3 className="text-xl font-bold font-inter text-red-700 mb-2">{t(lang, "track_not_found") || "Application Not Found"}</h3>
               <p className="text-red-600/80 max-w-md mx-auto">
-                We couldn&apos;t find an application with the number <span className="font-bold">&quot;{appNumber}&quot;</span>. Please check the number and try again.
+                {t(lang, "track_not_found_desc") || "We couldn't find an application with the number"} <span className="font-bold">&quot;{appNumber}&quot;</span>. {t(lang, "track_check_num") || "Please check the number and try again."}
               </p>
             </div>
           )}
@@ -140,12 +143,12 @@ export default function TrackApplicationPage() {
         <div className="mt-8 bg-blue-50 border border-blue-100 rounded-2xl p-6 flex gap-4">
           <Info className="w-6 h-6 text-blue-500 flex-shrink-0" />
           <div>
-            <h4 className="font-bold text-blue-900 mb-1">Need help?</h4>
+            <h4 className="font-bold text-blue-900 mb-1">{t(lang, "track_need_help") || "Need help?"}</h4>
             <p className="text-sm text-blue-800/80 mb-3">
-              If you have lost your application number, you can retrieve it using your registered mobile number and date of birth.
+              {t(lang, "track_lost_num") || "If you have lost your application number, you can retrieve it using your registered mobile number and date of birth."}
             </p>
             <Link href="/coming-soon" className="text-sm font-semibold text-blue-700 hover:underline">
-              Retrieve Application Number &rarr;
+              {t(lang, "track_retrieve") || "Retrieve Application Number"} &rarr;
             </Link>
           </div>
         </div>

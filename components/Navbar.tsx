@@ -1,15 +1,17 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Search, X, ChevronDown, FileBadge, CarFront, Banknote, FileText, Languages, Bot, ChevronRight, Sparkles } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Search, X, ChevronDown, FileBadge, CarFront, Banknote, FileText, Languages, Bot, ChevronRight, Sparkles, User, LogOut, LayoutDashboard, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/components/LangContext";
-import { t, Lang, LANGUAGE_NAMES } from "@/lib/translations";
+import { t } from "@/lib/translations";
+import { useSession } from "@/lib/sessionContext";
+import { findLicenceByDl } from "@/lib/mockData";
 
 import { serviceCategories, getAllServices } from "@/lib/serviceCatalog";
 import { matchServiceIntent, getClarifyingFollowup, ServiceMatchResult } from "@/lib/vaniServiceNavigator";
-
+import ThemedLoader from "@/components/ThemedLoader";
 type ChatMessage = {
   id: string;
   role: "user" | "vani";
@@ -31,9 +33,13 @@ const ALL_SECTIONS = serviceCategories.map(category => ({
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { lang, setLang } = useLang();
+  const { session, logout } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"browse" | "describe">("browse");
   const [describeInput, setDescribeInput] = useState("");
@@ -43,42 +49,57 @@ export default function Navbar() {
     {
       id: "init",
       role: "vani",
-      text: "Hi, I'm VANI. Tell me what you need help with — for example, 'I bought a used car' or 'my licence expired.'"
+      text: "Tell me what you're trying to do on Parivahan."
     }
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   
-  const langDropdownRef = useRef<HTMLDivElement>(null);
+
+  const userDropdownRef = useRef<HTMLDivElement>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
-  // Navigation as requested: Home, Services, My Parivahan, Track Application, Help, About, Login
+  // Derive display name from linked DL or fall back to mobile number
+  const displayName = useMemo(() => {
+    if (!session.isLoggedIn) return null;
+    if (session.linkedDL) {
+      const licence = findLicenceByDl(session.linkedDL);
+      if (licence) {
+        // First name only for compactness
+        return licence.name.split(" ")[0];
+      }
+    }
+    return session.mobileNumber ? `+91 ${session.mobileNumber.slice(-4).padStart(10, "•")}` : "You";
+  }, [session]);
+
+  // Navigation items — Login is replaced when logged in
   const topNavItems = [
     { name: t(lang, "nav_home") || "Home",               href: "/" },
-    { name: t(lang, "nav_services") || "Services",           isModalTrigger: true }, // Opens the finder, or could link to /services directly
-    { name: "My Parivahan",            href: "/my-parivahan" },
-    { name: "Track Application",       href: "/track-application" },
+    { name: t(lang, "nav_services") || "Services",           isModalTrigger: true },
+    { name: t(lang, "nav_my_parivahan") || "My Parivahan",   href: "/my-parivahan" },
+    { name: t(lang, "nav_track_application") || "Track Application", href: "/track-application" },
     { name: t(lang, "nav_help") || "Help",               href: "/help" },
     { name: t(lang, "nav_about") || "About",              href: "/about" },
-    { name: t(lang, "nav_login") || "Login",              href: "/login" },
   ];
 
-  // Esc to close modal & dropdown
+  // Esc to close all dropdowns & modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsModalOpen(false);
-        setIsLangDropdownOpen(false);
+        setIsUserDropdownOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Click outside to close dropdown
+
+
+  // Click outside to close user dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target as Node)) {
-        setIsLangDropdownOpen(false);
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
+        setIsUserDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -152,16 +173,26 @@ export default function Navbar() {
     }
   };
 
-  return (
-    <div className="fixed top-4 left-4 right-4 z-50 flex justify-center">
-      <nav className="relative w-full max-w-[95%] xl:max-w-7xl bg-primary text-white rounded-3xl xl:rounded-full px-4 py-3 xl:px-6 xl:py-3 shadow-lg flex flex-col xl:flex-row xl:items-center justify-between gap-3 xl:gap-0">
-        {/* Logo */}
-        <Link href="/" className="font-bold font-inter text-xl tracking-tight shrink-0 text-center xl:text-left">
-          Parivahan Sewa
-        </Link>
+  function handleLogout() {
+    setIsUserDropdownOpen(false);
+    logout();
+    router.push("/");
+  }
 
-        {/* Nav items */}
-        <div className="flex overflow-x-auto items-center gap-1 pb-1 xl:pb-0 scrollbar-hide">
+  return (
+    <div className="fixed top-4 left-4 right-4 z-[100] flex justify-center">
+      <nav className="relative w-full max-w-[95%] xl:max-w-7xl bg-primary text-white rounded-3xl xl:rounded-full px-4 py-3 xl:px-6 xl:py-3 shadow-lg flex flex-col xl:flex-row xl:items-center justify-between gap-3 xl:gap-0">
+        
+        {/* Top Row (Always visible) */}
+        <div className="flex items-center justify-between w-full">
+          
+          {/* Logo */}
+          <Link href="/" className="font-bold font-inter text-lg xl:text-xl tracking-tight shrink-0 mr-2">
+            Parivahan Sewa
+          </Link>
+
+          {/* Desktop Nav Items */}
+          <div className="hidden xl:flex items-center justify-center flex-1 mx-4 gap-1">
           {topNavItems.map((item) => {
             if (item.isModalTrigger) {
               return (
@@ -189,56 +220,154 @@ export default function Navbar() {
               </Link>
             );
           })}
+          </div>
 
-          {/* ── Ask VANI Button ── */}
-          <button
-            onClick={() => { setActiveTab("describe"); setIsModalOpen(true); }}
-            title="Ask VANI"
-            className="group relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#f3b82a] text-black shadow-[0_0_12px_rgba(243,184,42,0.5)] hover:shadow-[0_0_20px_rgba(243,184,42,0.8)] transition-all ml-1 md:ml-2 flex-shrink-0"
-          >
-            {/* Glow / Pulse effect */}
-            <div className="absolute inset-0 rounded-full bg-[#f3b82a] animate-ping opacity-30" />
-            <Sparkles className="w-4 h-4 md:w-5 md:h-5 relative z-10 transition-transform group-hover:scale-110" />
-          </button>
-
-          {/* ── Language dropdown ── */}
-          <div className="relative ml-2 flex-shrink-0" ref={langDropdownRef}>
-            <button
-              onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-              title="Change language"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/30 text-white/80 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors whitespace-nowrap"
-            >
-              <Languages className="w-3.5 h-3.5" />
-              {LANGUAGE_NAMES[lang]}
-            </button>
-            <AnimatePresence>
-              {isLangDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-48 bg-white text-text rounded-2xl shadow-xl border border-text/10 overflow-hidden z-50 flex flex-col py-2"
+          {/* Right Actions: Auth, VANI, Lang, Hamburger */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* ── Auth area ── */}
+            {session.isLoggedIn ? (
+              /* Logged-in: user chip + dropdown */
+              <div className="relative flex-shrink-0" ref={userDropdownRef}>
+                <button
+                  onClick={() => setIsUserDropdownOpen(o => !o)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 md:px-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold transition-all"
+                  title="Account"
                 >
-                  {(Object.entries(LANGUAGE_NAMES) as [Lang, string][]).map(([key, name]) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setLang(key);
-                        setIsLangDropdownOpen(false);
-                      }}
-                      className={`text-left px-4 py-2 text-sm transition-colors font-medium ${
-                        lang === key ? "bg-primary/10 text-primary" : "hover:bg-black/5 text-text/80"
-                      }`}
+                  <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                    <User className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="hidden sm:block max-w-[80px] truncate">{displayName}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-white/70 transition-transform ${isUserDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                <AnimatePresence>
+                  {isUserDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-52 bg-white text-text rounded-2xl shadow-xl border border-text/10 overflow-hidden z-50 flex flex-col py-2"
                     >
-                      {name}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      {/* User info header */}
+                      <div className="px-4 py-3 border-b border-text/10">
+                        <p className="text-sm font-bold text-text truncate mb-1">{session.name || "User"}</p>
+                        <p className="text-xs font-semibold text-primary font-ibm-plex truncate">
+                          +91 {session.mobileNumber}
+                        </p>
+                        {session.linkedDL && (
+                          <p className="text-xs text-text/50 font-mono mt-0.5">{session.linkedDL}</p>
+                        )}
+                      </div>
+
+                      <Link
+                        href="/my-parivahan"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-text/80 hover:bg-primary/5 hover:text-primary transition-colors"
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        {t(lang, "nav_my_parivahan")}
+                      </Link>
+
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        {t(lang, "nav_logout")}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              /* Logged-out: Login link */
+              <Link
+                href="/login"
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  pathname === "/login"
+                    ? "bg-white/20 text-white"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {t(lang, "nav_login") || "Login"}
+              </Link>
+            )}
+
+            {/* ── Ask VANI Button ── */}
+            <button
+              onClick={() => { setActiveTab("describe"); setIsModalOpen(true); }}
+              title="Ask VANI"
+              className="group relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#f3b82a] text-black shadow-[0_0_12px_rgba(243,184,42,0.5)] hover:shadow-[0_0_20px_rgba(243,184,42,0.8)] transition-all flex-shrink-0"
+            >
+              {/* Glow / Pulse effect */}
+              <div className="absolute inset-0 rounded-full bg-[#f3b82a] animate-ping opacity-30" />
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 relative z-10 transition-transform group-hover:scale-110" />
+            </button>
+
+            {/* ── Language Toggle ── */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setLang(lang === "en" ? "hi" : "en")}
+                title="Change language"
+                className="flex items-center gap-1.5 px-2 py-1.5 md:px-3 rounded-full border border-white/30 text-white/80 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors whitespace-nowrap"
+              >
+                <Languages className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{lang === "en" ? "हिन्दी" : "English"}</span>
+                <span className="sm:hidden">{lang === "en" ? "हि" : "En"}</span>
+              </button>
+            </div>
+
+            {/* ── Hamburger Menu Toggle (Mobile Only) ── */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="xl:hidden p-1.5 rounded-full hover:bg-white/10 transition-colors ml-0.5"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Nav Items */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="xl:hidden overflow-hidden flex flex-col gap-1 mt-2 pt-3 border-t border-white/10 w-full"
+            >
+              {topNavItems.map((item) => {
+                if (item.isModalTrigger) {
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => { setActiveTab("browse"); setIsModalOpen(true); setIsMobileMenuOpen(false); }}
+                      className="px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-white hover:bg-white/10 text-left flex items-center gap-2 w-full"
+                    >
+                      <Search className="w-4 h-4 text-white/70" />
+                      {item.name}
+                    </button>
+                  );
+                }
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href!}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full ${
+                      pathname === item.href && item.href !== "/coming-soon"
+                        ? "bg-white/20 text-white"
+                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* ── Command Palette Modal ── */}
@@ -269,13 +398,13 @@ export default function Navbar() {
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "browse" ? "bg-white shadow-sm text-primary" : "text-text/60 hover:text-text"}`}
                       onClick={() => { setActiveTab("browse"); }}
                     >
-                      Browse & Search
+                      {t(lang, "finder_browse") || "Browse & Search"}
                     </button>
                     <button 
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "describe" ? "bg-white shadow-sm text-primary" : "text-text/60 hover:text-text"}`}
                       onClick={() => { setActiveTab("describe"); }}
                     >
-                      Describe what you need ✨
+                      {t(lang, "finder_title") || "Describe what you need ✨"}
                     </button>
                   </div>
                   
@@ -284,7 +413,7 @@ export default function Navbar() {
                     <input
                       type="text"
                       autoFocus
-                      placeholder={activeTab === "browse" ? "Search by service name or category..." : "E.g. I bought a second-hand car..."}
+                      placeholder={activeTab === "browse" ? t(lang, "finder_search_placeholder") || "Search by service name or category..." : t(lang, "finder_ai_placeholder") || "E.g. I bought a second-hand car..."}
                       value={activeTab === "browse" ? searchTerm : describeInput}
                       onChange={(e) => {
                         if (activeTab === "browse") setSearchTerm(e.target.value);
@@ -411,48 +540,110 @@ export default function Navbar() {
                               : "bg-white border border-text/10 shadow-sm rounded-tl-sm text-text"
                           }`}>
                             {msg.isTyping ? (
-                              <div className="flex gap-1.5 items-center h-5 px-1">
-                                <motion.div className="w-1.5 h-1.5 bg-text/30 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} />
-                                <motion.div className="w-1.5 h-1.5 bg-text/30 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} />
-                                <motion.div className="w-1.5 h-1.5 bg-text/30 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} />
+                              <div className="flex gap-2 items-center h-5 px-1">
+                                <ThemedLoader size="sm" className="text-primary" />
+                                <span className="text-xs text-text/50 font-medium">VANI is thinking...</span>
                               </div>
                             ) : msg.text ? (
                               <p className="text-sm leading-relaxed">{msg.text}</p>
                             ) : msg.match ? (
                               <div className="space-y-3">
-                                 {msg.match.confidence === "high" && msg.match.matchedService ? (
-                                    <div>
-                                      <h4 className="font-bold text-primary mb-1">{msg.match.matchedService}</h4>
-                                      <p className="text-sm text-text/80 mb-4">{msg.match.explanation}</p>
+                                 {(msg.match.confidence === "high" || msg.match.confidence === "medium") && msg.match.matchedService ? (
+                                    <div className="flex flex-col">
                                       {(() => {
-                                        const service = getAllServices().find(s => s.name === msg.match?.matchedService);
-                                        return service ? (
-                                          <Link href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="inline-flex items-center px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/20 transition-colors">
-                                            Go to Service <ChevronRight className="w-4 h-4 ml-1" />
-                                          </Link>
-                                        ) : null;
+                                        const service = getAllServices().find(s => s.id === msg.match?.matchedService);
+                                        if (!service) return null;
+                                        return (
+                                          <>
+                                            <p className="text-sm text-text/80 mb-3">{msg.match.explanation}</p>
+                                            <div className="bg-text/5 p-3 rounded-xl border border-text/10 mb-3">
+                                              <h4 className="font-bold text-primary mb-2">{service.name}</h4>
+                                              
+                                              {service.documentsRequired && service.documentsRequired.length > 0 && (
+                                                <div className="mb-2">
+                                                  <span className="text-xs font-bold text-text/60 block mb-1">What you&apos;ll need:</span>
+                                                  <ul className="text-xs text-text/80 list-disc pl-4">
+                                                    {service.documentsRequired.map(doc => (
+                                                      <li key={doc.name}>{doc.name}</li>
+                                                    ))}
+                                                  </ul>
+                                                </div>
+                                              )}
+                                              
+                                              {service.rtoVisitRequired && (
+                                                <div>
+                                                  <span className="text-xs font-bold text-text/60 block mb-1">RTO visit:</span>
+                                                  <p className="text-xs text-text/80">
+                                                    {service.rtoVisitRequired === 'online' ? 'Completely online.' : 
+                                                     service.rtoVisitRequired === 'required' ? 'Required.' : 
+                                                     'May depend on the application and RTO.'}
+                                                  </p>
+                                                </div>
+                                              )}
+                                            </div>
+                                            
+                                            <div className="flex">
+                                              <Link href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm">
+                                                {service.availabilityState === 'implemented' ? 'Start application' :
+                                                 service.availabilityState === 'preview' ? 'View experience preview' : 
+                                                 'Explore service'} 
+                                                <ChevronRight className="w-4 h-4 ml-1" />
+                                              </Link>
+                                            </div>
+                                          </>
+                                        );
                                       })()}
                                     </div>
-                                 ) : (
+                                 ) : msg.match.matchedService ? (
                                     <div>
                                       {msg.match.matchedService && (
                                         <div className="mb-3 pb-3 border-b border-text/5">
-                                          <h4 className="font-semibold text-text/80 text-sm mb-1">{msg.match.matchedService} (Tentative)</h4>
+                                          <h4 className="font-semibold text-text/80 text-sm mb-1">{
+                                            getAllServices().find(s => s.id === msg.match?.matchedService)?.name || msg.match.matchedService
+                                          } (Tentative)</h4>
                                           <p className="text-xs text-text/60">{msg.match.explanation}</p>
                                         </div>
                                       )}
                                       <p className="text-sm font-medium text-text">{msg.match.clarifyingQuestion}</p>
                                     </div>
+                                 ) : (
+                                    <div>
+                                      <p className="text-sm text-text/80 mb-4">{msg.match.explanation}</p>
+                                      {msg.match.clarifyingQuestion ? (
+                                        <p className="text-sm font-medium text-text mb-3">{msg.match.clarifyingQuestion}</p>
+                                      ) : (
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                          <button onClick={() => setActiveTab("browse")} className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold transition-colors">Browse services</button>
+                                          <button onClick={() => setDescribeInput("")} className="px-3 py-1.5 bg-text/5 text-text/80 hover:bg-text/10 rounded-lg text-xs font-semibold transition-colors">Try again</button>
+                                          <Link href="/help" onClick={() => setIsModalOpen(false)} className="px-3 py-1.5 bg-text/5 text-text/80 hover:bg-text/10 rounded-lg text-xs font-semibold transition-colors">Open Help</Link>
+                                        </div>
+                                      )}
+                                    </div>
+                                 )}
+                                 {msg.match.secondaryMatches && msg.match.secondaryMatches.length > 0 && (
+                                    <div className="pt-3 border-t border-text/5 mt-3">
+                                      <p className="text-xs font-semibold text-text/50 mb-2">You also asked about:</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {msg.match.secondaryMatches.map(alt => {
+                                          const service = getAllServices().find(s => s.id === alt);
+                                          return service ? (
+                                             <Link key={alt} href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 rounded-md text-xs font-medium text-primary transition-colors">
+                                               {service.name}
+                                             </Link>
+                                          ) : null;
+                                        })}
+                                      </div>
+                                    </div>
                                  )}
                                  {msg.match.alternativeMatches && msg.match.alternativeMatches.length > 0 && (
                                     <div className="pt-3 border-t border-text/5 mt-3">
-                                      <p className="text-xs font-semibold text-text/50 mb-2">Alternatively:</p>
+                                      <p className="text-xs font-semibold text-text/50 mb-2">Related:</p>
                                       <div className="flex flex-wrap gap-2">
                                         {msg.match.alternativeMatches.map(alt => {
-                                          const service = getAllServices().find(s => s.name === alt);
+                                          const service = getAllServices().find(s => s.id === alt);
                                           return service ? (
                                              <Link key={alt} href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="px-2.5 py-1.5 bg-text/5 hover:bg-text/10 rounded-md text-xs font-medium text-text transition-colors">
-                                               {alt}
+                                               {service.name}
                                              </Link>
                                           ) : null;
                                         })}

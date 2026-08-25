@@ -30,17 +30,19 @@ import {
   Building2,
 } from "lucide-react";
 import { MockLicence, RenewalApplication } from "@/lib/types";
+import ThemedLoader from "@/components/ThemedLoader";
 import { useLang } from "@/components/LangContext";
 import { t } from "@/lib/translations";
+import { useSession } from "@/lib/sessionContext";
 
 // ── Step definitions ────────────────────────────────────────────────────────
-type Step = "intro" | "state" | "verify" | "otp" | "review" | "documents" | "payment" | "tracking";
+// OTP step removed — login OTP is now handled once on the Login page.
+type Step = "intro" | "state" | "verify" | "review" | "documents" | "payment" | "tracking";
 
 const STEPS: { id: Step; label: string }[] = [
   { id: "intro",     label: "Start" },
   { id: "state",     label: "State" },
-  { id: "verify",    label: "Verify" },
-  { id: "otp",       label: "OTP" },
+  { id: "verify",    label: "Link DL" },
   { id: "review",    label: "Review" },
   { id: "documents", label: "Documents" },
   { id: "payment",   label: "Payment" },
@@ -48,7 +50,7 @@ const STEPS: { id: Step; label: string }[] = [
 ];
 
 const STEP_INDEX: Record<Step, number> = {
-  intro: 0, state: 1, verify: 2, otp: 3, review: 4, documents: 5, payment: 6, tracking: 7,
+  intro: 0, state: 1, verify: 2, review: 3, documents: 4, payment: 5, tracking: 6,
 };
 
 // ── Indian States list ────────────────────────────────────────────────────────
@@ -517,7 +519,6 @@ const dobSchema = z.string().min(1, "Date of Birth is required")
   }, "Age must be between 18 and 100 years");
 
 const captchaSchema = z.string().length(6, "CAPTCHA must be exactly 6 characters");
-const otpSchema = z.string().length(6, "OTP must be exactly 6 digits").regex(/^\d+$/, "OTP must contain only numbers");
 
 const docUploadSchema = z.custom<File>()
   .refine(file => file && ["image/jpeg", "image/png", "application/pdf"].includes(file.type), "Only PDF, JPG, or PNG files are allowed")
@@ -537,6 +538,7 @@ function FieldError({ error }: { error?: string }) {
 export default function DLRenewalPage() {
   const router = useRouter();
   const { lang } = useLang();
+  const { session, linkDL } = useSession();
   const [step, setStep] = useState<Step>("intro");
 
   // State selection
@@ -544,8 +546,6 @@ export default function DLRenewalPage() {
 
   const [dlNumber, setDlNumber] = useState("");
   const [dob, setDob] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [devOtp, setDevOtp] = useState<string | null>(null);
 
   // CAPTCHA
   const [captchaText, setCaptchaText] = useState(() => generateCaptchaText());
@@ -563,9 +563,14 @@ export default function DLRenewalPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [maskedPhone, setMaskedPhone] = useState("");
 
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // ── Auth guard: redirect to login if not signed in ──────────────────────────
+  useEffect(() => {
+    if (!session.isLoggedIn) {
+      router.replace("/login?return=/dl-renewal");
+    }
+  }, [session.isLoggedIn, router]);
+
 
 
   // Polling
@@ -587,6 +592,7 @@ export default function DLRenewalPage() {
 
   function clearError() { setError(null); }
 
+  // ── Verify: matches DL+DOB, links to session, proceeds directly to review ────
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
     setFormErrors({});
@@ -614,34 +620,20 @@ export default function DLRenewalPage() {
       });
       const json = await res.json();
       if (!json.success) { setError(json.error); return; }
-      setMaskedPhone(json.data.maskedPhone);
-      setDevOtp(json.data._devOtp);
-      setStep("otp");
-    } catch { setError("Network error. Please try again."); }
-    finally { setLoading(false); }
-  }
 
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setFormErrors({});
-    clearError();
-    
-    const otpResult = otpSchema.safeParse(otp.join(""));
-    if (!otpResult.success) {
-      setFormErrors({ otp: otpResult.error.errors[0].message });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/dl/verify-otp", {
+      // Fetch the licence details via the OTP-verify endpoint (skips OTP — user is already logged in)
+      const otpRes = await fetch("/api/dl/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dlNumber: dlNumber.trim(), dateOfBirth: dob, otp: otpResult.data }),
+        // Any 6-digit mock OTP is accepted — user is authenticated; this just retrieves licence data
+        body: JSON.stringify({ dlNumber: dlResult.data, dateOfBirth: dob, otp: "000000" }),
       });
-      const json = await res.json();
-      if (!json.success) { setError(json.error); return; }
-      setLicence(json.data.licence);
+      const otpJson = await otpRes.json();
+      if (!otpJson.success) { setError(otpJson.error); return; }
+
+      // Link this DL number to the active session
+      linkDL(dlResult.data);
+      setLicence(otpJson.data.licence);
       setStep("review");
     } catch { setError("Network error. Please try again."); }
     finally { setLoading(false); }
@@ -670,7 +662,8 @@ export default function DLRenewalPage() {
     
     const validFile = docUploadSchema.safeParse(file);
     if (!validFile.success) {
-      setError(`Upload failed: ${validFile.error.errors[0].message}`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setError(`Upload failed: ${(validFile.error as any).errors[0].message}`);
       return;
     }
 
@@ -734,9 +727,9 @@ export default function DLRenewalPage() {
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <p className="text-sm font-mono text-text/50 mb-1 uppercase tracking-wider">Online Services</p>
-          <h1 className="text-3xl md:text-4xl font-bold font-inter text-primary">Driving Licence Renewal</h1>
-          <p className="text-text/60 mt-2 font-ibm-plex">Renew your DL online in a few simple steps — no office visit required.</p>
+          <p className="text-sm font-mono text-text/50 mb-1 uppercase tracking-wider">{t(lang, "dl_online_services")}</p>
+          <h1 className="text-3xl md:text-4xl font-bold font-inter text-primary">{t(lang, "dl_renewal_title")}</h1>
+          <p className="text-text/60 mt-2 font-ibm-plex">{t(lang, "dl_renewal_subtitle")}</p>
         </div>
 
         {/* Stepper */}
@@ -751,7 +744,15 @@ export default function DLRenewalPage() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-mono font-bold transition-all duration-300 ${done ? "bg-primary text-white" : active ? "bg-accent text-white ring-4 ring-accent/30" : "bg-white text-text/40 border border-text/20"}`}>
                     {done ? <CheckCircle className="w-4 h-4" /> : i + 1}
                   </div>
-                  <span className={`text-xs mt-1 font-ibm-plex ${active ? "text-accent font-semibold" : done ? "text-primary" : "text-text/40"}`}>{s.label}</span>
+                  <span className={`text-xs mt-1 font-ibm-plex ${active ? "text-accent font-semibold" : done ? "text-primary" : "text-text/40"}`}>
+                    {s.id === "intro" ? t(lang, "step_start") :
+                     s.id === "state" ? t(lang, "step_state") :
+                     s.id === "verify" ? t(lang, "step_link_dl") :
+                     s.id === "review" ? t(lang, "step_review") :
+                     s.id === "documents" ? t(lang, "step_documents") :
+                     s.id === "payment" ? t(lang, "step_payment") :
+                     t(lang, "step_track") || s.label}
+                  </span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className={`h-0.5 w-8 md:w-16 mx-1 transition-all duration-500 ${done ? "bg-primary" : "bg-text/15"}`} />
@@ -866,20 +867,20 @@ export default function DLRenewalPage() {
                   <MapPin className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold font-inter text-primary">Select your State / UT</h2>
-                  <p className="text-sm text-text/60 font-ibm-plex">Services are managed by your state RTO</p>
+                  <h2 className="text-xl font-bold font-inter text-primary">{t(lang, "state_select_title")}</h2>
+                  <p className="text-sm text-text/60 font-ibm-plex">{t(lang, "state_select_subtitle")}</p>
                 </div>
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-text/70 mb-1.5 font-ibm-plex">State / Union Territory</label>
+                <label className="block text-sm font-semibold text-text/70 mb-1.5 font-ibm-plex">{t(lang, "state_label")}</label>
                 <div className="relative">
                   <select
                     value={selectedState}
                     onChange={e => setSelectedState(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-text/20 bg-[#F7F5F0] font-ibm-plex text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition appearance-none cursor-pointer pr-10"
                   >
-                    <option value="">— Select your state —</option>
+                    <option value="">{t(lang, "state_placeholder")}</option>
                     {INDIAN_STATES.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
@@ -897,9 +898,9 @@ export default function DLRenewalPage() {
                   >
                     <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-semibold text-amber-800 font-ibm-plex text-sm">Currently available for select states</p>
+                      <p className="font-semibold text-amber-800 font-ibm-plex text-sm">{t(lang, "state_unavailable_title")}</p>
                       <p className="text-amber-700 text-xs font-ibm-plex mt-0.5">
-                        <span className="font-semibold">{selectedState}</span> is not yet onboarded. We are rolling out across all states — more coming soon.
+                        <span className="font-semibold">{selectedState}</span>{t(lang, "state_unavailable_desc1")}
                       </p>
                     </div>
                   </motion.div>
@@ -929,15 +930,15 @@ export default function DLRenewalPage() {
             </motion.div>
           )}
 
-          {/* ── STEP 1: Verify ── */}
+          {/* ── STEP 1: Link Licence (was Verify) ── */}
           {step === "verify" && (
             <motion.div key="verify" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.2 }}
               className="bg-white rounded-2xl shadow-sm border border-text/8 p-8">
-              {/* State badge */}
+              {/* State badge + session context banner */}
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-xl font-bold font-inter text-primary mb-1">Enter your licence details</h2>
-                  <p className="text-sm text-text/60 font-ibm-plex">Enter your DL number and date of birth exactly as on your licence.</p>
+                  <h2 className="text-xl font-bold font-inter text-primary mb-1">{t(lang, "verify_title")}</h2>
+                  <p className="text-sm text-text/60 font-ibm-plex">Signed in as <span className="font-semibold text-primary">+91 {session.mobileNumber}</span>. {t(lang, "verify_subtitle")}</p>
                 </div>
                 <button type="button" onClick={() => setStep("state")}
                   className="flex items-center gap-1.5 text-xs font-semibold font-ibm-plex text-primary/60 hover:text-primary border border-primary/20 rounded-full px-3 py-1.5 transition">
@@ -970,11 +971,11 @@ export default function DLRenewalPage() {
               </div>
               <form onSubmit={handleVerify} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-semibold text-text/70 mb-1.5 font-ibm-plex">Driving Licence Number</label>
+                  <label className="block text-sm font-semibold text-text/70 mb-1.5 font-ibm-plex">{t(lang, "dl_number_label")}</label>
                   <input
                     type="text" value={dlNumber}
                     onChange={(e) => setDlNumber(e.target.value.toUpperCase())}
-                    placeholder="e.g. MH01 2011 0012345" required
+                    placeholder={t(lang, "dl_number_placeholder") || "e.g. MH01 2011 0012345"} required
                     className={`w-full px-4 py-3 rounded-xl border bg-[#F7F5F0] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${formErrors.dlNumber ? "border-red-400 focus:border-red-500 ring-red-400/20" : "border-text/20 focus:border-primary"}`}
                   />
                   <FieldError error={formErrors.dlNumber} />
@@ -986,7 +987,7 @@ export default function DLRenewalPage() {
                 {/* ── CAPTCHA ── */}
                 <div>
                   <label className="block text-sm font-semibold text-text/70 mb-1.5 font-ibm-plex">
-                    Enter the characters shown below
+                    {t(lang, "captcha_label")}
                   </label>
                   <CaptchaDisplay text={captchaText} />
                   <div className="flex gap-2 mt-2">
@@ -994,7 +995,7 @@ export default function DLRenewalPage() {
                       type="text"
                       value={captchaInput}
                       onChange={e => setCaptchaInput(e.target.value.toUpperCase())}
-                      placeholder="Type the characters above"
+                      placeholder={t(lang, "captcha_placeholder")}
                       required
                       maxLength={6}
                       className={`flex-1 px-4 py-3 rounded-xl border bg-[#F7F5F0] font-mono text-sm uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${formErrors.captcha ? "border-red-400 focus:border-red-500 ring-red-400/20" : "border-text/20 focus:border-primary"}`}
@@ -1025,7 +1026,6 @@ export default function DLRenewalPage() {
                     </div>
                   </div>
                   <span className="text-sm text-text/70 font-ibm-plex leading-relaxed">
-                    I accept the{" "}
                     <a href="/coming-soon" className="text-primary font-semibold underline underline-offset-2 hover:text-accent transition">Privacy Policy</a>
                     {" "}and{" "}
                     <a href="/coming-soon" className="text-primary font-semibold underline underline-offset-2 hover:text-accent transition">Terms of Service</a>
@@ -1035,56 +1035,19 @@ export default function DLRenewalPage() {
 
                 <button type="submit" disabled={loading || !dob || !captchaInput || !consentChecked}
                   className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                  {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
-                  {loading ? "Verifying..." : "Verify & Send OTP"}
+                  {loading ? <ThemedLoader size="sm" /> : <ChevronRight className="w-4 h-4" />}
+                  {loading ? t(lang, "fetching") || "Verifying..." : t(lang, "fetch_details") || "Confirm & Link Licence"}
                 </button>
               </form>
             </motion.div>
           )}
 
-          {/* ── STEP 2: OTP ── */}
-          {step === "otp" && (
-            <motion.div key="otp" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl shadow-sm border border-text/8 p-8">
-              <h2 className="text-xl font-bold font-inter text-primary mb-1">Enter OTP</h2>
-              <p className="text-sm text-text/60 font-ibm-plex mb-2">A 6-digit OTP has been sent to <span className="font-mono font-semibold text-text">{maskedPhone}</span></p>
-              {devOtp && (
-                <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm font-ibm-plex text-amber-800">
-                  <span className="font-semibold">Your OTP: </span>
-                  <span className="font-mono font-bold text-lg tracking-widest">{devOtp}</span>
-                </div>
-              )}
-              <form onSubmit={handleVerifyOtp} className="space-y-6">
-                <div className="flex gap-3 justify-center">
-                  {otp.map((digit, i) => (
-                    <input key={i} ref={(el) => { otpRefs.current[i] = el; }}
-                      type="text" inputMode="numeric" maxLength={1} value={digit}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "");
-                        const newOtp = [...otp]; newOtp[i] = val; setOtp(newOtp);
-                        if (val && i < 5) otpRefs.current[i + 1]?.focus();
-                      }}
-                      onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
-                      className={`w-12 h-14 text-center text-2xl font-mono font-bold border-2 rounded-xl bg-[#F7F5F0] focus:outline-none focus:ring-2 focus:ring-primary/30 transition ${formErrors.otp ? "border-red-400 focus:border-red-500 ring-red-400/20 text-red-600" : "border-text/20 focus:border-primary"}`}
-                    />
-                  ))}
-                </div>
-                <div className="flex justify-center -mt-2"><FieldError error={formErrors.otp} /></div>
-                <button type="submit" disabled={loading || otp.join("").length < 6}
-                  className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60">
-                  {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                  {loading ? "Verifying OTP..." : "Confirm OTP"}
-                </button>
-              </form>
-            </motion.div>
-          )}
-
-          {/* ── STEP 3: Review ── */}
+          {/* ── STEP 2: Review ── */}
           {step === "review" && licence && (
             <motion.div key="review" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.2 }} className="space-y-6">
               <div className="bg-white rounded-2xl shadow-sm border border-text/8 p-8">
-                <h2 className="text-xl font-bold font-inter text-primary mb-4">Review your licence details</h2>
-                <p className="text-sm text-text/60 font-ibm-plex mb-6">Please verify the information below before proceeding.</p>
+                <h2 className="text-xl font-bold font-inter text-primary mb-4">{t(lang, "review_title")}</h2>
+                <p className="text-sm text-text/60 font-ibm-plex mb-6">{t(lang, "review_subtitle")}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <InfoRow icon={<User />} label="Full Name" value={licence.name} />
                   <InfoRow icon={<Calendar />} label="Date of Birth" value={formatDate(licence.dateOfBirth)} />
@@ -1100,7 +1063,6 @@ export default function DLRenewalPage() {
                   <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-sm font-ibm-plex text-amber-800">
                     <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-semibold">Form 1A Required</p>
                       <p className="text-amber-700 mt-0.5">As you are above 40 years of age, a medical fitness certificate (Form 1A) signed by a registered medical practitioner is required for renewal.</p>
                     </div>
                   </div>
@@ -1114,8 +1076,8 @@ export default function DLRenewalPage() {
                 </div>
                 <button onClick={handleSubmit} disabled={loading}
                   className="px-8 py-3.5 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60">
-                  {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
-                  {loading ? "Creating Application..." : "Proceed to Documents"}
+                  {loading ? <ThemedLoader size="sm" /> : <ChevronRight className="w-4 h-4" />}
+                  {loading ? (t(lang, "processing") || "Creating Application...") : (t(lang, "review_proceed") || "Proceed to Documents")}
                 </button>
               </div>
             </motion.div>
@@ -1127,7 +1089,7 @@ export default function DLRenewalPage() {
               <div className="bg-white rounded-2xl shadow-sm border border-text/8 p-8">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h2 className="text-xl font-bold font-inter text-primary">Required Documents Checklist</h2>
+                    <h2 className="text-xl font-bold font-inter text-primary">{t(lang, "docs_title")}</h2>
                     <p className="text-sm text-text/60 font-ibm-plex mt-1">Application ID: <span className="font-mono font-bold text-primary">{applicationId}</span></p>
                   </div>
                   <div className="flex items-center gap-2 bg-[#F7F5F0] px-3 py-1.5 rounded-lg border border-text/10">
@@ -1169,13 +1131,13 @@ export default function DLRenewalPage() {
           {step === "payment" && applicationId && (
             <motion.div key="payment" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.2 }}
               className="bg-white rounded-2xl shadow-sm border border-text/8 p-8">
-              <h2 className="text-xl font-bold font-inter text-primary mb-1">Payment</h2>
-              <p className="text-sm text-text/60 font-ibm-plex mb-6">Review and confirm your renewal payment.</p>
+              <h2 className="text-xl font-bold font-inter text-primary mb-1">{t(lang, "pay_title")}</h2>
+              <p className="text-sm text-text/60 font-ibm-plex mb-6">{t(lang, "pay_subtitle")}</p>
               <div className="bg-[#F7F5F0] rounded-xl p-5 mb-6 space-y-3 font-ibm-plex">
                 <div className="flex justify-between text-sm"><span className="text-text/60">Application ID</span><span className="font-mono font-bold text-primary">{applicationId}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-text/60">Service</span><span className="font-semibold">DL Renewal</span></div>
                 <div className="flex justify-between text-sm"><span className="text-text/60">Applicant</span><span className="font-semibold">{licence?.name}</span></div>
-                <div className="border-t border-text/10 pt-3 flex justify-between"><span className="font-semibold text-text">Total Amount</span><span className="font-mono font-bold text-xl text-primary">₹200.00</span></div>
+                <div className="border-t border-text/10 pt-3 flex justify-between"><span className="font-semibold text-text">{t(lang, "pay_amount_label")}</span><span className="font-mono font-bold text-xl text-primary">₹200.00</span></div>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex gap-3 mb-6 text-sm font-ibm-plex text-green-800">
                 <CheckCircle className="w-5 h-5 flex-shrink-0" />
@@ -1183,8 +1145,8 @@ export default function DLRenewalPage() {
               </div>
               <button onClick={handlePayment} disabled={loading}
                 className="w-full py-4 rounded-xl bg-accent text-white font-bold font-ibm-plex flex items-center justify-center gap-2 hover:bg-accent/90 active:scale-[0.99] transition-all disabled:opacity-60 text-lg">
-                {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
-                {loading ? "Processing Payment..." : "Pay ₹200 Now"}
+                {loading ? <ThemedLoader size="md" /> : <CreditCard className="w-5 h-5" />}
+                {loading ? (t(lang, "processing") || "Processing Payment...") : (t(lang, "pay_btn") || "Pay Securely")}
               </button>
             </motion.div>
           )}
@@ -1286,7 +1248,7 @@ export default function DLRenewalPage() {
                 <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   onClick={handleDownloadPDF} disabled={pdfLoading}
                   className="w-full py-4 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center justify-center gap-2 hover:bg-primary/90 transition-all disabled:opacity-60">
-                  {pdfLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {pdfLoading ? <ThemedLoader size="sm" /> : <Download className="w-4 h-4" />}
                   {pdfLoading ? "Generating PDF..." : "Download Renewed Licence Certificate (PDF)"}
                 </motion.button>
               )}
@@ -1337,7 +1299,7 @@ function DocUploadRow({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUploading ? "bg-primary/20" : uploaded ? "bg-green-500" : "bg-primary/10"}`}>
-            {isUploading ? <RefreshCw className="w-4 h-4 text-primary animate-spin" /> : uploaded ? <CheckCircle className="w-4 h-4 text-white" /> : <Upload className="w-4 h-4 text-primary" />}
+            {isUploading ? <ThemedLoader size="sm" className="text-primary" /> : uploaded ? <CheckCircle className="w-4 h-4 text-white" /> : <Upload className="w-4 h-4 text-primary" />}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold font-ibm-plex text-text">{label}</p>

@@ -143,3 +143,95 @@ export function generateApplicationId(): string {
   const suffix = Math.floor(100000 + Math.random() * 900000).toString();
   return `PSW-2026-${suffix}`;
 }
+
+// ── Mock Aadhaar Records ───────────────────────────────────────────────────────
+// Aadhaar numbers in real life are 12 digits. In mock: any 12-digit number
+// that matches one of these records will auto-populate the profile and optionally
+// link a driving licence.
+export interface MockAadhaar {
+  aadhaarNumber: string;     // 12-digit mock
+  name: string;
+  dateOfBirth: string;       // ISO date
+  address: string;
+  mobileNumber: string;      // pre-linked mobile for this Aadhaar
+  linkedDLNumber: string | null; // null if holder has no DL on record
+}
+
+export const mockAadhaarRecords: MockAadhaar[] = [
+  // ── Has linked DL (Rajesh — MH) ──
+  {
+    aadhaarNumber: "987654321012",
+    name: "Rajesh Kumar Sharma",
+    dateOfBirth: "1975-04-12",
+    address: "204, Shivaji Nagar, Bandra West, Mumbai - 400050",
+    mobileNumber: "9876543210",
+    linkedDLNumber: "MH01 2011 0012345",
+  },
+  // ── Has linked DL (Priya — Delhi) ──
+  {
+    aadhaarNumber: "876543210987",
+    name: "Priya Mehta",
+    dateOfBirth: "2002-09-25",
+    address: "15-B, Lajpat Nagar III, New Delhi - 110024",
+    mobileNumber: "9123456780",
+    linkedDLNumber: "DL04 2022 0098765",
+  },
+  // ── Has linked DL (Arun — Karnataka) ──
+  {
+    aadhaarNumber: "765432109876",
+    name: "Arun Kumar",
+    dateOfBirth: "1985-05-15",
+    address: "123, 4th Main, Koramangala 5th Block, Bengaluru - 560095",
+    mobileNumber: "9876543111",
+    linkedDLNumber: "KA01 2018 0001234",
+  },
+  // ── No linked DL (new user, student) ──
+  {
+    aadhaarNumber: "654321098765",
+    name: "Nisha Patel",
+    dateOfBirth: "2000-06-20",
+    address: "12, Paldi Cross Rd, Ahmedabad, Gujarat - 380007",
+    mobileNumber: "9988776655",
+    linkedDLNumber: null,
+  },
+  // ── No linked DL (senior citizen, no DL) ──
+  {
+    aadhaarNumber: "543210987654",
+    name: "Mohan Lal Verma",
+    dateOfBirth: "1950-01-10",
+    address: "45, Hauz Khas Village, New Delhi - 110016",
+    mobileNumber: "9112233445",
+    linkedDLNumber: null,
+  },
+];
+
+export function findAadhaar(aadhaarNumber: string): MockAadhaar | undefined {
+  const cleaned = aadhaarNumber.replace(/\s+/g, "");
+  return mockAadhaarRecords.find((r) => r.aadhaarNumber === cleaned);
+}
+
+// ── Manual User Profile Store (keyed by mobile number) ───────────────────────
+// Stores profiles created via the manual sign-up flow (Path B on the login page)
+export interface UserProfile {
+  mobileNumber: string;
+  name: string;
+  dateOfBirth: string;
+  address: string;
+  createdAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __userProfileStore: Map<string, UserProfile> | undefined;
+}
+
+export function getUserProfileStore(): Map<string, UserProfile> {
+  if (!global.__userProfileStore) {
+    global.__userProfileStore = new Map();
+  }
+  return global.__userProfileStore;
+}
+
+export function findProfileByMobile(mobile: string): UserProfile | undefined {
+  return getUserProfileStore().get(mobile);
+}
