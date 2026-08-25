@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   User, CarFront, FileBadge, Bell, Settings, LogOut,
-  ArrowRight, Clock, CheckCircle, SearchX, Lock, Link2Off, Link2, BadgeCheck, X
+  ArrowRight, Clock, CheckCircle, SearchX, Lock, Link2Off, Link2, BadgeCheck, X, FileSearch, Banknote
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "@/lib/sessionContext";
 import { findLicenceByDl } from "@/lib/mockData";
 import { serviceCatalog } from "@/lib/serviceCatalog";
 import { RenewalApplication } from "@/lib/types";
-import { MockLicence } from "@/lib/types";
+import { MockLicence, MockVehicle } from "@/lib/types";
 import ThemedLoader from "@/components/ThemedLoader";
 import { useLang } from "@/components/LangContext";
 import { t } from "@/lib/translations";
@@ -29,7 +29,11 @@ export default function MyParivahanPage() {
   const [appsResolved, setAppsResolved] = useState(false);
   
   // ── Document View State ──────────────────────────────────────────────────
-  const [viewingDoc, setViewingDoc] = useState<"dl" | "rc" | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<"dl" | string | null>(null);
+
+  // ── Vehicles state ───────────────────────────────────────────────────────
+  const [vehicles, setVehicles] = useState<MockVehicle[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
 
   // ── Linked licence lookup (optional — dashboard works without it) ─────────
   const linkedLicence: MockLicence | undefined = session.linkedDL
@@ -74,10 +78,25 @@ export default function MyParivahanPage() {
     }
   }, [session.isLoggedIn, session.linkedDL, session.mobileNumber]);
 
+  const fetchVehicles = useCallback(async () => {
+    if (!session.isLoggedIn) return;
+    setLoadingVehicles(true);
+    try {
+      const res = await fetch(`/api/auth/my-vehicles`);
+      const json = await res.json();
+      if (json.success) setVehicles(json.data.vehicles);
+    } catch {
+      // Silently handle
+    } finally {
+      setLoadingVehicles(false);
+    }
+  }, [session.isLoggedIn]);
+
   useEffect(() => {
     if (!session.isLoggedIn) return;
     fetchApplications();
-  }, [fetchApplications, session.isLoggedIn]);
+    fetchVehicles();
+  }, [fetchApplications, fetchVehicles, session.isLoggedIn]);
 
   // ── Not logged in yet (hydrating) ────────────────────────────────────────
   if (!session.isLoggedIn) {
@@ -177,6 +196,65 @@ export default function MyParivahanPage() {
                 </div>
               </section>
             )}
+
+            {/* ── My Vehicles ── */}
+            <section className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-text/5">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold font-inter text-primary">{t(lang, "my_vehicles_title")}</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {loadingVehicles ? (
+                  <div className="col-span-1 sm:col-span-2 text-center py-8">
+                    <ThemedLoader size="md" className="mx-auto mb-3 text-primary" />
+                  </div>
+                ) : vehicles.length === 0 ? (
+                  <div className="col-span-1 sm:col-span-2 text-center py-8 bg-bg rounded-2xl border border-text/5">
+                    <CarFront className="w-8 h-8 text-text/30 mx-auto mb-3" />
+                    <p className="font-bold text-text/60">No vehicles found</p>
+                  </div>
+                ) : (
+                  vehicles.map((vehicle) => (
+                    <div key={vehicle.rcNumber} className="border border-text/10 rounded-2xl p-5 bg-bg relative overflow-hidden flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-bold font-mono text-lg text-primary bg-white px-3 py-1 rounded-lg shadow-sm border border-text/5">
+                            {vehicle.rcNumber}
+                          </span>
+                          <span className={`text-xs font-bold px-2 py-1 rounded-md ${
+                            vehicle.status === "Active" ? "bg-success/20 text-success-dark" : "bg-red-100 text-red-700"
+                          }`}>
+                            {vehicle.status}
+                          </span>
+                        </div>
+                        <h3 className="font-semibold text-text mb-4">{vehicle.makeModel}</h3>
+                        
+                        <div className="grid grid-cols-2 gap-3 mb-5">
+                          <div className="bg-white p-2 rounded-lg border border-text/5">
+                            <p className="text-[10px] uppercase text-text/50 mb-0.5">{t(lang, "vehicle_tax")}</p>
+                            <p className="text-xs font-semibold text-success-dark flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> {t(lang, "vehicle_valid")}
+                            </p>
+                          </div>
+                          <div className="bg-white p-2 rounded-lg border border-text/5">
+                            <p className="text-[10px] uppercase text-text/50 mb-0.5">{t(lang, "vehicle_pucc")}</p>
+                            <p className="text-xs font-semibold text-success-dark flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> {t(lang, "vehicle_valid")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => setViewingDoc(vehicle.rcNumber)}
+                        className="w-full py-2.5 rounded-xl bg-white border border-primary/20 text-primary font-semibold text-sm hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                      >
+                        {t(lang, "vehicle_view")} <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
 
             {/* ── Applications ── */}
             <section className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-text/5">
@@ -338,21 +416,29 @@ export default function MyParivahanPage() {
                     </div>
                   </div>
 
-                  {/* RC Card (mocked) */}
-                  <div className="bg-gradient-to-br from-gray-800 to-gray-700 text-white p-5 rounded-2xl relative overflow-hidden shadow-md">
-                    <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full" />
-                    <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Registration Certificate</p>
-                    <p className="font-bold text-lg mb-4 font-ibm-plex tracking-wider">KA01 AB 1234</p>
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <p className="text-[10px] text-white/50 uppercase">Vehicle</p>
-                        <p className="text-sm font-semibold">Honda City VMT</p>
-                      </div>
-                      <button onClick={() => setViewingDoc("rc")} className="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors backdrop-blur-sm">
-                        View
-                      </button>
+                  {/* RC Cards */}
+                  {loadingVehicles ? (
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 text-white p-5 rounded-2xl relative overflow-hidden shadow-md flex items-center justify-center min-h-[140px]">
+                      <ThemedLoader size="sm" className="text-white/50" />
                     </div>
-                  </div>
+                  ) : (
+                    vehicles.map((vehicle) => (
+                      <div key={vehicle.rcNumber} className="bg-gradient-to-br from-gray-800 to-gray-700 text-white p-5 rounded-2xl relative overflow-hidden shadow-md">
+                        <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full" />
+                        <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Registration Certificate</p>
+                        <p className="font-bold text-lg mb-4 font-ibm-plex tracking-wider">{vehicle.rcNumber}</p>
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <p className="text-[10px] text-white/50 uppercase">Vehicle</p>
+                            <p className="text-sm font-semibold">{vehicle.makeModel}</p>
+                          </div>
+                          <button onClick={() => setViewingDoc(vehicle.rcNumber)} className="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors backdrop-blur-sm">
+                            View
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </section>
             )}
@@ -412,18 +498,66 @@ export default function MyParivahanPage() {
                   </>
                 ) : (
                   <>
-                    <div className="flex justify-between border-b border-text/5 pb-3">
-                      <span className="text-text/60 text-sm">RC Number</span>
-                      <span className="font-bold font-mono">KA01 AB 1234</span>
-                    </div>
-                    <div className="flex justify-between border-b border-text/5 pb-3">
-                      <span className="text-text/60 text-sm">Vehicle Name</span>
-                      <span className="font-bold">Honda City VMT</span>
-                    </div>
-                    <div className="flex justify-between pb-3">
-                      <span className="text-text/60 text-sm">Owner Name</span>
-                      <span className="font-bold">{session.name || "Rajesh Kumar"}</span>
-                    </div>
+                    {(() => {
+                      const v = vehicles.find(vec => vec.rcNumber === viewingDoc);
+                      if (!v) return <p>Vehicle not found.</p>;
+                      return (
+                        <>
+                          <div className="bg-bg rounded-xl p-4 border border-text/5 mb-4">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-text/60 text-xs uppercase">{t(lang, "vehicle_reg_no")}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                v.status === "Active" ? "bg-success/20 text-success-dark" : "bg-red-100 text-red-700"
+                              }`}>
+                                {v.status}
+                              </span>
+                            </div>
+                            <span className="font-bold font-mono text-lg">{v.rcNumber}</span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 border-b border-text/5 pb-4">
+                            <div>
+                              <span className="block text-text/50 text-[10px] uppercase mb-1">{t(lang, "vehicle_type")}</span>
+                              <span className="font-semibold text-sm">{v.makeModel}</span>
+                            </div>
+                            <div>
+                              <span className="block text-text/50 text-[10px] uppercase mb-1">Owner Name</span>
+                              <span className="font-semibold text-sm">{v.ownerName}</span>
+                            </div>
+                            <div>
+                              <span className="block text-text/50 text-[10px] uppercase mb-1">Class</span>
+                              <span className="font-semibold text-sm">{v.vehicleClass}</span>
+                            </div>
+                            <div>
+                              <span className="block text-text/50 text-[10px] uppercase mb-1">Reg Date</span>
+                              <span className="font-semibold text-sm">{new Date(v.registrationDate).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+
+                          <div className="pt-2">
+                            <h4 className="text-sm font-bold text-primary mb-3">{t(lang, "vehicle_services")}</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Link href="/services/transfer-ownership" className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2 transition-colors">
+                                <CarFront className="w-4 h-4 text-primary" />
+                                <span className="text-xs font-semibold text-primary">Transfer RC</span>
+                              </Link>
+                              <Link href="/services/pay-challan" className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2 transition-colors">
+                                <Banknote className="w-4 h-4 text-primary" />
+                                <span className="text-xs font-semibold text-primary">Pay Challan</span>
+                              </Link>
+                              <Link href="/services/duplicate-rc" className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2 transition-colors">
+                                <FileSearch className="w-4 h-4 text-primary" />
+                                <span className="text-xs font-semibold text-primary">Duplicate RC</span>
+                              </Link>
+                              <Link href="/services/change-address" className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2 transition-colors">
+                                <FileBadge className="w-4 h-4 text-primary" />
+                                <span className="text-xs font-semibold text-primary">Change Address</span>
+                              </Link>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </>
                 )}
               </div>

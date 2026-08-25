@@ -34,10 +34,11 @@ export default function Home() {
   const { lang } = useLang();
 
   const words = [
-    t(lang, "word_licence"),
-    t(lang, "word_rc"),
-    t(lang, "word_permit"),
-    t(lang, "word_tax"),
+    t(lang, "hero_word_0"),
+    t(lang, "hero_word_1"),
+    t(lang, "hero_word_2"),
+    t(lang, "hero_word_3"),
+    t(lang, "hero_word_4"),
   ];
   const [index, setIndex] = useState(0);
 
@@ -68,36 +69,78 @@ export default function Home() {
       <section className="py-16 md:py-24 text-center">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-inter text-primary mb-6 leading-tight text-center flex flex-col items-center justify-center">
           <motion.div layout className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2">
-            <motion.span layout>{t(lang, "hero_renew")}</motion.span>
-            <motion.span layout className="relative flex justify-center items-center text-accent overflow-visible">
-              <AnimatePresence mode="wait">
+            <span className="relative grid items-center justify-items-center text-primary overflow-visible min-w-[200px]">
+              <AnimatePresence mode="popLayout">
                 <motion.span
-                  key={`${lang}-${index}`}
-                  layout
+                  key={`action-${lang}-${index}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap row-start-1 col-start-1"
+                >
+                  {t(lang, `hero_action_${index}`)}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+            <span className="relative grid items-center justify-items-center text-accent overflow-visible">
+              <AnimatePresence mode="popLayout">
+                <motion.span
+                  key={`${lang}-${index}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="whitespace-nowrap row-start-1 col-start-1"
                 >
                   {words[index]}
                 </motion.span>
               </AnimatePresence>
-            </motion.span>
+            </span>
           </motion.div>
-          <motion.span layout className="block mt-2 md:mt-4 text-text/90">{t(lang, "hero_line2")}</motion.span>
         </h1>
-        <p className="text-lg md:text-xl text-text/80 max-w-2xl mx-auto mb-10 font-ibm-plex mt-4 md:mt-0">
-          {t(lang, "hero_subtitle")}
-        </p>
-        <Link
-          href="/services/dl-renewal"
-          prefetch={true}
-          className="inline-flex items-center gap-2 bg-accent text-primary font-semibold px-8 py-4 rounded-full text-lg transition-transform hover:scale-105 active:scale-95 shadow-lg"
-        >
-          {t(lang, "hero_cta")}
-          <ArrowRight className="w-5 h-5" />
-        </Link>
+        <div className="relative h-[80px] md:h-[60px] flex items-start justify-center max-w-2xl mx-auto mb-10 overflow-hidden">
+          <AnimatePresence mode="popLayout">
+            <motion.p
+              key={`desc-${lang}-${index}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="text-lg md:text-xl text-text/80 font-ibm-plex text-center absolute"
+            >
+              {t(lang, `hero_desc_${index}`)}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+        
+        <div className="relative h-[60px] flex justify-center">
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key={`cta-${lang}-${index}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="absolute"
+            >
+              <Link
+                href={
+                  index === 0 ? "/services/dl-renewal" :
+                  index === 1 ? "/services" :
+                  index === 2 ? "/services/pay-challan" :
+                  index === 3 ? "/track-application" :
+                  "/services"
+                }
+                prefetch={true}
+                className="inline-flex items-center gap-2 bg-accent text-primary font-semibold px-8 py-4 rounded-full text-lg transition-transform hover:scale-105 active:scale-95 shadow-lg"
+              >
+                {t(lang, `hero_cta_${index}`)}
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </section>
 
       {/* ── Intent Section — What do you need today? ── */}
@@ -216,6 +259,25 @@ export default function Home() {
               </Link>
             );
           })}
+        </div>
+      </section>
+
+      {/* ── Explore All Services ── */}
+      <section className="mb-16">
+        <div className="bg-primary/5 rounded-3xl p-8 md:p-12 text-center border border-primary/10 flex flex-col items-center">
+          <h2 className="text-2xl md:text-3xl font-bold font-inter text-primary mb-4">
+            {t(lang, "explore_services_title")}
+          </h2>
+          <p className="text-text/70 font-ibm-plex max-w-2xl mx-auto mb-8">
+            {t(lang, "explore_services_desc")}
+          </p>
+          <Link
+            href="/services"
+            className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-6 py-3 rounded-xl border border-text/10 shadow-sm hover:shadow-md hover:border-primary/20 transition-all active:scale-95"
+          >
+            {t(lang, "explore_services_cta")}
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </section>
 

@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     application.paymentTransactionId = transactionId;
     application.status = "under_review";
     application.updatedAt = now;
+    delete application.nextAction;
     application.statusHistory.push(
       { status: "payment_done", timestamp: now },
       { status: "under_review", timestamp: now }

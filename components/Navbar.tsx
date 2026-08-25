@@ -181,7 +181,7 @@ export default function Navbar() {
 
   return (
     <div className="fixed top-4 left-4 right-4 z-[100] flex justify-center">
-      <nav className="relative w-full max-w-[95%] xl:max-w-7xl bg-primary text-white rounded-3xl xl:rounded-full px-4 py-3 xl:px-6 xl:py-3 shadow-lg flex flex-col xl:flex-row xl:items-center justify-between gap-3 xl:gap-0">
+      <nav className="relative w-full max-w-[95%] xl:max-w-7xl bg-primary text-white rounded-3xl xl:rounded-full px-3 py-2 xl:px-6 xl:py-3 shadow-lg flex flex-col xl:flex-row xl:items-center justify-between">
         
         {/* Top Row (Always visible) */}
         <div className="flex items-center justify-between w-full">
@@ -223,7 +223,7 @@ export default function Navbar() {
           </div>
 
           {/* Right Actions: Auth, VANI, Lang, Hamburger */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* ── Auth area ── */}
             {session.isLoggedIn ? (
               /* Logged-in: user chip + dropdown */

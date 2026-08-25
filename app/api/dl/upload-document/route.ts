@@ -40,6 +40,19 @@ export async function POST(req: NextRequest) {
     }
 
     application.updatedAt = now;
+
+    // Check if all required docs are uploaded
+    const requiredDocs = application.requiresForm1A 
+      ? ["address_proof", "photo", "existing_licence", "form_1a"]
+      : ["address_proof", "photo", "existing_licence"];
+
+    const allUploaded = requiredDocs.every(rt => application.documents.some(d => d.type === rt));
+    if (allUploaded && application.status === "draft") {
+      application.status = "payment_pending";
+      application.nextAction = "Complete Payment";
+      application.statusHistory.push({ status: "payment_pending", timestamp: now });
+    }
+
     store.set(applicationId, application);
 
     return NextResponse.json({

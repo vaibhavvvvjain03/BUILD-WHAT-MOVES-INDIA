@@ -1164,7 +1164,7 @@ export default function DLRenewalPage() {
                 {application.status === "under_review" && (
                   <div className="mt-5 flex items-center gap-2 text-white/80 font-ibm-plex text-sm">
                     <Clock className="w-4 h-4 animate-pulse" />
-                    <span>Your application is under review — typically approved within seconds during demo...</span>
+                    <span>Your application is under review by the RTO...</span>
                   </div>
                 )}
                 {application.status === "approved" && (

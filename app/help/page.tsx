@@ -56,7 +56,7 @@ export default function HelpPage() {
             <p className="text-sm text-text/70">{t(lang, "citizen_guides_desc")}</p>
           </Link>
 
-          <a href="https://parivahan.gov.in/parivahan//en/content/download-forms" target="_blank" rel="noopener noreferrer" className="bg-white p-6 rounded-2xl border border-text/5 shadow-sm hover:shadow-md transition-all group block">
+          <a href="https://parivahan.gov.in/parivahan/en/content/download-forms" target="_blank" rel="noopener noreferrer" className="bg-white p-6 rounded-2xl border border-text/5 shadow-sm hover:shadow-md transition-all group block">
             <div className="w-12 h-12 bg-primary/5 text-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <FileText className="w-6 h-6" />
             </div>
@@ -66,22 +66,21 @@ export default function HelpPage() {
             <p className="text-sm text-text/70">{t(lang, "dl_forms_desc")}</p>
           </a>
 
-          <Link href="/coming-soon" className="bg-white p-6 rounded-2xl border border-text/5 shadow-sm hover:shadow-md transition-all group block relative">
-            <div className="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-full">Coming Soon</div>
+          <a href="https://www.youtube.com/c/MoRTHIndia" target="_blank" rel="noopener noreferrer" className="bg-white p-6 rounded-2xl border border-text/5 shadow-sm hover:shadow-md transition-all group block relative">
             <div className="w-12 h-12 bg-primary/5 text-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Video className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg text-primary mb-2">{t(lang, "video_tutorials")}</h3>
             <p className="text-sm text-text/70">{t(lang, "video_tutorials_desc")}</p>
-          </Link>
+          </a>
 
-          <Link href="/help/contact-support" className="bg-white p-6 rounded-2xl border border-text/5 shadow-sm hover:shadow-md transition-all group block">
+          <a href="mailto:helpdesk-sarthi@gov.in" className="bg-white p-6 rounded-2xl border border-text/5 shadow-sm hover:shadow-md transition-all group block">
             <div className="w-12 h-12 bg-primary/5 text-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Phone className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg text-primary mb-2">{t(lang, "contact_support")}</h3>
             <p className="text-sm text-text/70">{t(lang, "contact_support_desc")}</p>
-          </Link>
+          </a>
         </div>
 
         {/* FAQs */}

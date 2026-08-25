@@ -44,11 +44,26 @@ export interface RenewalApplication {
   status: ApplicationStatus;
   createdAt: string;
   updatedAt: string;
+  nextAction?: string;            // e.g. "Complete Payment"
   documents: DocumentRecord[];
   paymentAmount: number;          // in INR
   paymentTransactionId?: string;
   requiresForm1A: boolean;
   statusHistory: { status: ApplicationStatus; timestamp: string }[];
+}
+
+// ── Vehicle Record (Mock) ───────────────────────────────────────────────────
+export interface MockVehicle {
+  rcNumber: string;               // e.g. "MH01AB1234"
+  ownerName: string;
+  vehicleClass: string;           // e.g. "Motor Car (LMV)"
+  makeModel: string;              // e.g. "Hyundai i20"
+  registrationDate: string;       // ISO date
+  fitnessValidUpto: string;       // ISO date
+  insuranceValidUpto: string;     // ISO date
+  pucValidUpto: string;           // ISO date
+  taxValidUpto: string;           // ISO date
+  status: "Active" | "Inactive";
 }
 
 // ── API Response shapes ───────────────────────────────────────────────────────

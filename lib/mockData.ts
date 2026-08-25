@@ -124,6 +124,35 @@ export function getOtpStore(): Map<string, string> {
   return global.__otpStore;
 }
 
+// ── Mock Vehicles ────────────────────────────────────────────────────────────
+import { MockVehicle } from "./types";
+export const mockVehicles: MockVehicle[] = [
+  {
+    rcNumber: "MH01 AB 1234",
+    ownerName: "Rajesh Kumar Sharma",
+    vehicleClass: "Motor Car (LMV)",
+    makeModel: "Hyundai i20",
+    registrationDate: "2018-05-10",
+    fitnessValidUpto: "2033-05-09",
+    insuranceValidUpto: "2027-05-09",
+    pucValidUpto: "2026-11-09",
+    taxValidUpto: "2033-05-09",
+    status: "Active",
+  },
+];
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __vehicleStore: Map<string, MockVehicle[]> | undefined;
+}
+
+export function getVehicleStore(): Map<string, MockVehicle[]> {
+  if (!global.__vehicleStore) {
+    global.__vehicleStore = new Map();
+  }
+  return global.__vehicleStore;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 export function findLicence(dlNumber: string, dob: string): MockLicence | undefined {
   const normalised = dlNumber.replace(/\s+/g, "").toUpperCase();

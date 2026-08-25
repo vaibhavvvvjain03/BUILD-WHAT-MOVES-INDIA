@@ -218,7 +218,7 @@ const translations: Record<string, { en: string; hi: string } & Partial<Record<L
   // ── DL Renewal Page Header ──────────────────────────────────────────────
   dl_online_services: { en: "Online Services", hi: "ऑनलाइन सेवाएँ" },
   dl_renewal_title: { en: "Driving Licence Renewal", hi: "ड्राइविंग लाइसेंस नवीनीकरण" },
-  dl_renewal_subtitle: { en: "Renew your DL online in a few simple steps — no office visit required.", hi: "कुछ सरल चरणों में अपना DL ऑनलाइन नवीनीकृत करें — किसी कार्यालय जाने की आवश्यकता नहीं है।" },
+  dl_renewal_subtitle: { en: "Renew your DL online in a few simple steps.", hi: "कुछ सरल चरणों में अपना DL ऑनलाइन नवीनीकृत करें।" },
 
   // ── State Selection ───────────────────────────────────────────────────────
   state_select_title: { en: "Select your State / UT", hi: "अपना राज्य / केंद्र शासित प्रदेश चुनें" },
@@ -426,11 +426,58 @@ const translations: Record<string, { en: string; hi: string } & Partial<Record<L
   why_easier_3_title: { en: "Transparent tracking", hi: "पारदर्शी ट्रैकिंग" },
   why_easier_3_desc: { en: "Track your application status in real-time. Receive instant notifications via SMS when your licence is approved.", hi: "अपने आवेदन की स्थिति को वास्तविक समय में ट्रैक करें। आपका लाइसेंस स्वीकृत होने पर SMS के माध्यम से तत्काल सूचनाएं प्राप्त करें।" },
 
+  // ── Portal Overhaul Additions ─────────────────────────────────────────────
+  
+  // Hero Rotating Words
+  hero_word_0: { en: "driving licence", hi: "ड्राइविंग लाइसेंस" },
+  hero_word_1: { en: "vehicle services", hi: "वाहन सेवाएं" },
+  hero_word_2: { en: "challan", hi: "चालान" },
+  hero_word_3: { en: "application", hi: "आवेदन" },
+  hero_word_4: { en: "right Parivahan service", hi: "सही परिवहन सेवा" },
+
+  // Hero Actions (Renew your / Manage your etc.)
+  hero_action_0: { en: "Renew your", hi: "अपना नवीनीकरण करें" },
+  hero_action_1: { en: "Manage your", hi: "प्रबंधित करें" },
+  hero_action_2: { en: "Check your", hi: "अपना चेक करें" },
+  hero_action_3: { en: "Track your", hi: "अपना ट्रैक करें" },
+  hero_action_4: { en: "Find the", hi: "खोजें" },
+
+  // Hero Descriptions
+  hero_desc_0: { en: "Complete your licence renewal journey with clear requirements and step-by-step guidance.", hi: "स्पष्ट आवश्यकताओं और चरण-दर-चरण मार्गदर्शन के साथ अपनी लाइसेंस नवीनीकरण यात्रा पूरी करें。" },
+  hero_desc_1: { en: "Transfer ownership, update details, access RC services and more from one place.", hi: "स्वामित्व हस्तांतरित करें, विवरण अपडेट करें, RC सेवाओं तक पहुंचें और बहुत कुछ एक ही स्थान से。" },
+  hero_desc_2: { en: "View challans, payment status and related traffic-service information.", hi: "चालान, भुगतान की स्थिति और संबंधित यातायात-सेवा की जानकारी देखें。" },
+  hero_desc_3: { en: "See exactly where your application stands and what you need to do next.", hi: "देखें कि आपका आवेदन वास्तव में कहां है और आपको आगे क्या करना है。" },
+  hero_desc_4: { en: "Tell us what you need and we'll guide you to the right service.", hi: "हमें बताएं कि आपको क्या चाहिए और हम आपको सही सेवा के लिए मार्गदर्शन करेंगे。" },
+
+  // Hero CTAs
+  hero_cta_0: { en: "Start DL Renewal", hi: "DL नवीनीकरण शुरू करें" },
+  hero_cta_1: { en: "Explore Vehicle Services", hi: "वाहन सेवाओं का अन्वेषण करें" },
+  hero_cta_2: { en: "Check Challan", hi: "चालान जांचें" },
+  hero_cta_3: { en: "Track Application", hi: "आवेदन ट्रैक करें" },
+  hero_cta_4: { en: "Find a Service", hi: "सेवा खोजें" },
+
+  // Explore Services Section
+  explore_services_title: { en: "Explore all Parivahan services", hi: "सभी परिवहन सेवाओं का अन्वेषण करें" },
+  explore_services_desc: { en: "Find driving licence, vehicle, tax, permit, appointment and application services in one place.", hi: "एक ही स्थान पर ड्राइविंग लाइसेंस, वाहन, कर, परमिट, नियुक्ति और आवेदन सेवाएं खोजें。" },
+  explore_services_cta: { en: "Explore all services", hi: "सभी सेवाओं का अन्वेषण करें" },
+
+  // My Parivahan Vehicles
+  my_vehicles_title: { en: "My Vehicles", hi: "मेरे वाहन" },
+  vehicle_rc_status: { en: "RC Status", hi: "RC स्थिति" },
+  vehicle_tax: { en: "Tax", hi: "कर" },
+  vehicle_pucc: { en: "PUCC", hi: "PUCC" },
+  vehicle_valid: { en: "Valid", hi: "वैध" },
+  vehicle_view: { en: "View vehicle", hi: "वाहन देखें" },
+  vehicle_detail_title: { en: "Vehicle Details", hi: "वाहन विवरण" },
+  vehicle_reg_no: { en: "Registration number", hi: "पंजीकरण संख्या" },
+  vehicle_type: { en: "Vehicle type", hi: "वाहन का प्रकार" },
+  vehicle_services: { en: "Vehicle Services", hi: "वाहन सेवाएं" },
+  vehicle_related_apps: { en: "Related Applications", hi: "संबंधित आवेदन" },
 };
 
-export function t(lang: Lang, key: string): string {
-  return translations[key]?.[lang] ?? translations[key]?.["en"] ?? key;
+export function t(lang: Lang | undefined, key: string): string {
+  if (!lang || !translations[key]) return key;
+  return translations[key][lang] || translations[key]["en"] || key;
 }
 
 export const ALL_TRANSLATION_KEYS = Object.keys(translations);
-

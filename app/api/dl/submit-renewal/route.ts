@@ -32,13 +32,14 @@ export async function POST(req: NextRequest) {
       dateOfBirth: licence.dateOfBirth,
       phoneNumber: licence.phoneNumber,
       email: licence.email,
-      status: "submitted",
+      status: "draft",
       createdAt: now,
       updatedAt: now,
+      nextAction: "Upload Documents",
       documents: [],
       paymentAmount: 400, // ₹400 standard renewal fee
       requiresForm1A: licence.requiresForm1A,
-      statusHistory: [{ status: "submitted", timestamp: now }],
+      statusHistory: [{ status: "draft", timestamp: now }],
     };
 
     getRenewalStore().set(applicationId, application);
