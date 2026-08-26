@@ -90,22 +90,42 @@ export default function Home() {
               <path d="M-100,240 Q700,40 1500,240" />
             </g>
 
-            {/* Car 1 */}
+            {/* Car 1a */}
             <g className="fill-primary opacity-30">
               <rect x="-14" y="-7" width="28" height="14" rx="4" />
               <rect x="-2" y="-5" width="10" height="10" rx="2" className="fill-background" />
               <circle cx="12" cy="-4" r="2" className="fill-yellow-400" />
               <circle cx="12" cy="4" r="2" className="fill-yellow-400" />
-              <animateMotion dur="16s" repeatCount="indefinite" rotate="auto">
+              <animateMotion dur="10s" repeatCount="indefinite" rotate="auto">
                 <mpath xlinkHref="#mainRoad" />
               </animateMotion>
             </g>
 
-            {/* Car 2 (going opposite direction) */}
+            {/* Car 1b (trailing car) */}
+            <g className="fill-primary opacity-30">
+              <rect x="-14" y="-7" width="28" height="14" rx="4" />
+              <rect x="-2" y="-5" width="10" height="10" rx="2" className="fill-background" />
+              <circle cx="12" cy="-4" r="2" className="fill-yellow-400" />
+              <circle cx="12" cy="4" r="2" className="fill-yellow-400" />
+              <animateMotion dur="10s" begin="5s" repeatCount="indefinite" rotate="auto">
+                <mpath xlinkHref="#mainRoad" />
+              </animateMotion>
+            </g>
+
+            {/* Car 2a (going opposite direction) */}
             <g className="fill-accent opacity-30">
               <rect x="-12" y="-6" width="24" height="12" rx="3" />
               <rect x="-2" y="-4" width="8" height="8" rx="1.5" className="fill-background" />
-              <animateMotion dur="22s" repeatCount="indefinite" rotate="auto">
+              <animateMotion dur="14s" repeatCount="indefinite" rotate="auto">
+                <mpath xlinkHref="#secondaryRoadReverse" />
+              </animateMotion>
+            </g>
+
+            {/* Car 2b */}
+            <g className="fill-accent opacity-30">
+              <rect x="-12" y="-6" width="24" height="12" rx="3" />
+              <rect x="-2" y="-4" width="8" height="8" rx="1.5" className="fill-background" />
+              <animateMotion dur="14s" begin="7s" repeatCount="indefinite" rotate="auto">
                 <mpath xlinkHref="#secondaryRoadReverse" />
               </animateMotion>
             </g>
