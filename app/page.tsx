@@ -71,23 +71,23 @@ export default function Home() {
       <section className="relative pt-8 pb-16 md:pt-12 md:pb-24 text-center">
         
         {/* Subtle Background Pattern (Highway Motif with Animated Vehicles) */}
-        <div className="absolute -top-12 left-0 right-0 h-[400px] overflow-hidden pointer-events-none -z-10">
-          <svg viewBox="0 0 1400 400" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
+        <div className="absolute -top-16 left-0 right-0 h-[280px] overflow-hidden pointer-events-none -z-10">
+          <svg viewBox="0 0 1400 280" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
             <defs>
-              <path id="mainRoad" d="M-100,120 Q700,320 1500,120" />
-              <path id="secondaryRoadReverse" d="M1500,320 Q700,20 -100,320" />
+              <path id="mainRoad" d="M-100,60 Q700,220 1500,60" />
+              <path id="secondaryRoadReverse" d="M1500,220 Q700,20 -100,220" />
             </defs>
 
             {/* Road group */}
             <g className="stroke-primary fill-none stroke-[2px] opacity-[0.08]">
-              <path d="M-100,100 Q700,300 1500,100" />
+              <path d="M-100,40 Q700,200 1500,40" />
               <use xlinkHref="#mainRoad" strokeDasharray="12,16" strokeWidth="4" className="stroke-accent" />
-              <path d="M-100,140 Q700,340 1500,140" />
+              <path d="M-100,80 Q700,240 1500,80" />
               
               {/* Second sweeping curve */}
-              <path d="M-100,300 Q700,0 1500,300" />
-              <path d="M-100,320 Q700,20 1500,320" strokeDasharray="8,12" strokeWidth="3" />
-              <path d="M-100,340 Q700,40 1500,340" />
+              <path d="M-100,200 Q700,0 1500,200" />
+              <path d="M-100,220 Q700,20 1500,220" strokeDasharray="8,12" strokeWidth="3" />
+              <path d="M-100,240 Q700,40 1500,240" />
             </g>
 
             {/* Car 1 */}
