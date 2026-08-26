@@ -20,7 +20,7 @@ export default function DisclaimerTicker() {
   const text = t(lang, "disclaimer_text");
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-10 bg-red-600 text-white z-50 overflow-hidden flex items-center border-t border-white/10 shadow-lg">
+    <div className="fixed bottom-3 left-3 right-3 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-4xl h-10 bg-emerald-600 text-white rounded-full z-50 overflow-hidden flex items-center shadow-lg">
       {isReducedMotion ? (
         <div className="w-full text-center px-4 truncate text-sm font-ibm-plex font-medium">
           {text}
@@ -33,7 +33,7 @@ export default function DisclaimerTicker() {
               100% { transform: translateX(-100%); }
             }
             .marquee-anim {
-              animation: marqueeScroll 30s linear infinite;
+              animation: marqueeScroll 60s linear infinite;
             }
           `}} />
           <div className="relative w-full overflow-hidden flex whitespace-nowrap">
