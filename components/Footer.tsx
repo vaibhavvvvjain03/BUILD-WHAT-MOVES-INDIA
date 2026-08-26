@@ -13,11 +13,13 @@ export default function Footer() {
         <div className="mb-12 border-b border-white/10 pb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h3 className="font-bold text-white text-2xl font-inter tracking-tight mb-2">{t(lang, "footer_title")}</h3>
-            <p className="text-white/70 max-w-md">{t(lang, "footer_subtitle")}</p>
+            <p className="text-white/40 text-sm mt-4 lg:mt-0 font-ibm-plex text-center md:text-left">
+            &copy; {new Date().getFullYear()} Ministry of Road Transport & Highways, Government of India. All rights reserved. <br/>
+            (This is a redesign prototype and not the official website)
+          </p>
           </div>
           <div className="text-left md:text-right">
-            <p className="text-sm font-semibold text-white/90">{t(lang, "footer_morth")}</p>
-            <p className="text-xs text-white/50 font-ibm-plex">{t(lang, "footer_goi")}</p>
+            {/* Kept empty to maintain layout, or removed if preferred, but flex-between needs it */}
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-sm">
@@ -93,7 +95,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/20 mt-12 pt-8 text-sm text-center text-white/50">
-          © {new Date().getFullYear()} {t(lang, "footer_title")} · {t(lang, "footer_morth")} · {t(lang, "footer_goi")}
+          © {new Date().getFullYear()} Parivahan Sewa Redesign · Inspired by the Ministry of Road Transport & Highways, Government of India
         </div>
       </div>
     </footer>

@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { ArrowLeft, Truck } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLang } from "@/components/LangContext";
+import { t } from "@/lib/translations";
 
 export default function ComingSoonPage() {
+  const { lang } = useLang();
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-[70vh] px-4">
       <motion.div
@@ -36,10 +39,10 @@ export default function ComingSoonPage() {
         </div>
 
         <h1 className="text-3xl font-bold font-inter text-text mb-4">
-          Still on the way
+          {t(lang, "coming_soon_title") || "Still on the way"}
         </h1>
         <p className="text-text/70 font-ibm-plex leading-relaxed mb-8">
-          This feature is currently under construction in the redesigned prototype. Check back in a future update!
+          {t(lang, "coming_soon_desc") || "This feature is currently under construction in the redesigned prototype. Check back in a future update!"}
         </p>
 
         <Link
@@ -47,7 +50,7 @@ export default function ComingSoonPage() {
           className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold font-ibm-plex hover:bg-primary/90 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          {t(lang, "back_home") || "Back to Home"}
         </Link>
       </motion.div>
     </div>

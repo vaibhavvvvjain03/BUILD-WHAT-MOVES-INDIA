@@ -146,7 +146,7 @@ export default function MyParivahanPage() {
                   )}
                 </p>
                 {session.dateOfBirth && (
-                  <p className="text-white/50 text-xs mt-1">DOB: {session.dateOfBirth}</p>
+                  <p className="text-white/50 text-xs mt-1">{t(lang, "prof_dob")}: {session.dateOfBirth}</p>
                 )}
               </div>
             </div>
@@ -161,7 +161,7 @@ export default function MyParivahanPage() {
               <button
                 onClick={() => { logout(); router.push("/"); }}
                 className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors text-red-300 hover:text-red-200"
-                title="Sign out"
+                title={t(lang, "sign_out") || "Sign out"}
               >
                 <LogOut className="w-5 h-5" />
               </button>
@@ -210,7 +210,7 @@ export default function MyParivahanPage() {
                 ) : vehicles.length === 0 ? (
                   <div className="col-span-1 sm:col-span-2 text-center py-8 bg-bg rounded-2xl border border-text/5">
                     <CarFront className="w-8 h-8 text-text/30 mx-auto mb-3" />
-                    <p className="font-bold text-text/60">No vehicles found</p>
+                    <p className="font-bold text-text/60">{t(lang, "no_vehicles_found") || "No vehicles found"}</p>
                   </div>
                 ) : (
                   vehicles.map((vehicle) => (
@@ -267,9 +267,25 @@ export default function MyParivahanPage() {
 
               <div className="space-y-4">
                 {loadingApps && !appsResolved ? (
-                  <div className="text-center py-12">
-                    <ThemedLoader size="lg" className="mx-auto mb-3 text-primary" />
-                    <p className="text-text/50 text-sm font-ibm-plex">Loading applications…</p>
+                  <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="border border-text/10 rounded-2xl p-5 bg-white relative overflow-hidden animate-pulse">
+                        <div className="absolute bottom-0 left-0 h-1 bg-text/5 w-full" />
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="w-8 h-8 rounded-full bg-text/5" />
+                              <div className="h-5 bg-text/5 rounded w-48" />
+                            </div>
+                            <div className="flex items-center gap-3 mt-2">
+                              <div className="h-4 bg-text/5 rounded w-24" />
+                              <div className="h-4 bg-text/5 rounded w-32" />
+                            </div>
+                          </div>
+                          <div className="h-8 bg-text/5 rounded-full w-24" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : applications.length === 0 ? (
                   <div className="text-center py-12 bg-bg rounded-2xl border border-text/5">
@@ -306,24 +322,24 @@ export default function MyParivahanPage() {
                                 <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center">
                                   <FileBadge className="w-4 h-4 text-primary" />
                                 </div>
-                                <h3 className="font-bold text-primary group-hover:underline">{service.name}</h3>
+                                <h3 className="font-bold text-primary group-hover:underline">{t(lang, service.name)}</h3>
                               </div>
                               <div className="flex items-center gap-3 text-xs text-text/60 font-ibm-plex mt-2">
                                 <span className="bg-bg px-2 py-1 rounded-md border border-text/5 font-mono">#{app.applicationId}</span>
-                                <span>Submitted: {new Date(app.createdAt).toLocaleDateString()}</span>
+                                <span>{t(lang, "Submitted") || "Submitted"}: {new Date(app.createdAt).toLocaleDateString()}</span>
                               </div>
                             </div>
                             {isPending ? (
                               <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider w-fit flex items-center gap-2">
-                                <Clock className="w-3 h-3" /> {t(lang, "action_req")}
+                                <Clock className="w-3 h-3" /> {t(lang, "Action Required") || "Action Required"}
                               </div>
                             ) : app.status === "approved" ? (
                               <div className="bg-success/10 border border-success/30 text-success-dark text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider w-fit flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3" /> {t(lang, "approved")}
+                                <CheckCircle className="w-3 h-3" /> {t(lang, "status_approved") || "Approved"}
                               </div>
                             ) : (
                               <div className="bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider w-fit flex items-center gap-1">
-                                {t(lang, "in_progress")}
+                                {t(lang, "Under Review") || "Under Review"}
                               </div>
                             )}
                           </div>
@@ -403,15 +419,15 @@ export default function MyParivahanPage() {
                     <p className="font-bold text-lg mb-4 font-ibm-plex tracking-wider">{linkedLicence.dlNumber}</p>
                     <div className="flex justify-between items-end">
                       <div>
-                        <p className="text-[10px] uppercase tracking-widest text-white/70 mb-0.5">Status: {t(lang, "status_active")}</p>
+                        <p className="text-[10px] uppercase tracking-widest text-white/70 mb-0.5">{t(lang, "status_label") || "Status"}: {t(lang, "status_active")}</p>
                         <p className="text-sm font-semibold font-ibm-plex">
-                          Valid till {new Date(linkedLicence.expiryDate).toLocaleDateString("en-GB", {
+                          {t(lang, "Valid till") || "Valid till"} {new Date(linkedLicence.expiryDate).toLocaleDateString("en-GB", {
                             day: "2-digit", month: "short", year: "numeric",
                           })}
                         </p>
                       </div>
                       <button onClick={() => setViewingDoc("dl")} className="text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors backdrop-blur-sm">
-                        View
+                        {t(lang, "vehicle_view") || "View"}
                       </button>
                     </div>
                   </div>
@@ -425,11 +441,11 @@ export default function MyParivahanPage() {
                     vehicles.map((vehicle) => (
                       <div key={vehicle.rcNumber} className="bg-gradient-to-br from-gray-800 to-gray-700 text-white p-5 rounded-2xl relative overflow-hidden shadow-md">
                         <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full" />
-                        <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Registration Certificate</p>
+                        <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">{t(lang, "rc_certificate") || "Registration Certificate"}</p>
                         <p className="font-bold text-lg mb-4 font-ibm-plex tracking-wider">{vehicle.rcNumber}</p>
                         <div className="flex justify-between items-end">
                           <div>
-                            <p className="text-[10px] text-white/50 uppercase">Vehicle</p>
+                            <p className="text-[10px] text-white/50 uppercase">{t(lang, "rc_vehicle") || "Vehicle"}</p>
                             <p className="text-sm font-semibold">{vehicle.makeModel}</p>
                           </div>
                           <button onClick={() => setViewingDoc(vehicle.rcNumber)} className="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors backdrop-blur-sm">
@@ -480,19 +496,19 @@ export default function MyParivahanPage() {
                 {viewingDoc === "dl" ? (
                   <>
                     <div className="flex justify-between border-b border-text/5 pb-3">
-                      <span className="text-text/60 text-sm">DL Number</span>
+                      <span className="text-text/60 text-sm">{t(lang, "dl_number") || "DL Number"}</span>
                       <span className="font-bold font-mono">{linkedLicence?.dlNumber}</span>
                     </div>
                     <div className="flex justify-between border-b border-text/5 pb-3">
-                      <span className="text-text/60 text-sm">Name</span>
+                      <span className="text-text/60 text-sm">{t(lang, "prof_name_full") || "Name"}</span>
                       <span className="font-bold">{linkedLicence?.name}</span>
                     </div>
                     <div className="flex justify-between border-b border-text/5 pb-3">
-                      <span className="text-text/60 text-sm">DOB</span>
+                      <span className="text-text/60 text-sm">{t(lang, "prof_dob_full") || "DOB"}</span>
                       <span className="font-bold">{linkedLicence?.dateOfBirth}</span>
                     </div>
                     <div className="flex justify-between pb-3">
-                      <span className="text-text/60 text-sm">Valid Till</span>
+                      <span className="text-text/60 text-sm">{t(lang, "valid_till") || "Valid Till"}</span>
                       <span className="font-bold">{new Date(linkedLicence?.expiryDate || Date.now()).toLocaleDateString()}</span>
                     </div>
                   </>
@@ -500,7 +516,7 @@ export default function MyParivahanPage() {
                   <>
                     {(() => {
                       const v = vehicles.find(vec => vec.rcNumber === viewingDoc);
-                      if (!v) return <p>Vehicle not found.</p>;
+                      if (!v) return <p>{t(lang, "vehicle_not_found") || "Vehicle not found."}</p>;
                       return (
                         <>
                           <div className="bg-bg rounded-xl p-4 border border-text/5 mb-4">
@@ -521,15 +537,15 @@ export default function MyParivahanPage() {
                               <span className="font-semibold text-sm">{v.makeModel}</span>
                             </div>
                             <div>
-                              <span className="block text-text/50 text-[10px] uppercase mb-1">Owner Name</span>
+                              <span className="block text-text/50 text-[10px] uppercase mb-1">{t(lang, "owner_name") || "Owner Name"}</span>
                               <span className="font-semibold text-sm">{v.ownerName}</span>
                             </div>
                             <div>
-                              <span className="block text-text/50 text-[10px] uppercase mb-1">Class</span>
+                              <span className="block text-text/50 text-[10px] uppercase mb-1">{t(lang, "vehicle_class") || "Class"}</span>
                               <span className="font-semibold text-sm">{v.vehicleClass}</span>
                             </div>
                             <div>
-                              <span className="block text-text/50 text-[10px] uppercase mb-1">Reg Date</span>
+                              <span className="block text-text/50 text-[10px] uppercase mb-1">{t(lang, "reg_date") || "Reg Date"}</span>
                               <span className="font-semibold text-sm">{new Date(v.registrationDate).toLocaleDateString()}</span>
                             </div>
                           </div>
@@ -539,19 +555,19 @@ export default function MyParivahanPage() {
                             <div className="grid grid-cols-2 gap-2">
                               <Link href="/services/transfer-ownership" className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2 transition-colors">
                                 <CarFront className="w-4 h-4 text-primary" />
-                                <span className="text-xs font-semibold text-primary">Transfer RC</span>
+                                <span className="text-xs font-semibold text-primary">{t(lang, "transfer_rc") || "Transfer RC"}</span>
                               </Link>
                               <Link href="/services/pay-challan" className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2 transition-colors">
                                 <Banknote className="w-4 h-4 text-primary" />
-                                <span className="text-xs font-semibold text-primary">Pay Challan</span>
+                                <span className="text-xs font-semibold text-primary">{t(lang, "pay_challan") || "Pay Challan"}</span>
                               </Link>
                               <Link href="/services/duplicate-rc" className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2 transition-colors">
                                 <FileSearch className="w-4 h-4 text-primary" />
-                                <span className="text-xs font-semibold text-primary">Duplicate RC</span>
+                                <span className="text-xs font-semibold text-primary">{t(lang, "duplicate_rc") || "Duplicate RC"}</span>
                               </Link>
                               <Link href="/services/change-address" className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2 transition-colors">
                                 <FileBadge className="w-4 h-4 text-primary" />
-                                <span className="text-xs font-semibold text-primary">Change Address</span>
+                                <span className="text-xs font-semibold text-primary">{t(lang, "change_address") || "Change Address"}</span>
                               </Link>
                             </div>
                           </div>

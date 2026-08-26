@@ -74,7 +74,7 @@ export default function HelpPage() {
             <p className="text-sm text-text/70">{t(lang, "video_tutorials_desc")}</p>
           </a>
 
-          <a href="mailto:helpdesk-sarthi@gov.in" className="bg-white p-6 rounded-2xl border border-text/5 shadow-sm hover:shadow-md transition-all group block">
+          <a href="mailto:support@parivahansewa-demo.example" className="bg-white p-6 rounded-2xl border border-text/5 shadow-sm hover:shadow-md transition-all group block">
             <div className="w-12 h-12 bg-primary/5 text-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Phone className="w-6 h-6" />
             </div>

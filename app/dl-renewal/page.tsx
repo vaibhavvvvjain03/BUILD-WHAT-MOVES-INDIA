@@ -65,7 +65,7 @@ const INDIAN_STATES = [
   "Daman & Diu", "Delhi", "Jammu & Kashmir", "Ladakh",
   "Lakshadweep", "Puducherry",
 ];
-const LIVE_STATES = ["Karnataka", "Delhi", "Maharashtra", "Tamil Nadu", "Uttar Pradesh", "West Bengal"];
+const LIVE_STATES = INDIAN_STATES.filter(s => !["Andaman & Nicobar Islands", "Lakshadweep"].includes(s));
 
 // ── CAPTCHA Generator ─────────────────────────────────────────────────────────
 function generateCaptchaText(): string {
@@ -314,29 +314,15 @@ async function generateRenewalPDF(
   doc.setFillColor(212, 162, 76); // #D4A24C
   doc.rect(0, 45, W, 3, "F");
 
-  // ── Emblem circle ──
-  doc.setFillColor(212, 162, 76);
-  doc.circle(105, 22, 14, "F");
-  doc.setFillColor(11, 61, 46);
-  doc.circle(105, 22, 11, "F");
-  doc.setFillColor(212, 162, 76);
-  doc.circle(105, 22, 7, "F");
-  doc.setFillColor(247, 245, 240);
-  doc.circle(105, 22, 3.5, "F");
-
   // ── Header text ──
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("GOVERNMENT OF INDIA", 105, 11, { align: "center" });
-  doc.text("MINISTRY OF ROAD TRANSPORT AND HIGHWAYS", 105, 15, { align: "center" });
+  doc.text("PARIVAHAN SEWA — INDEPENDENT REDESIGN PROTOTYPE", 105, 13, { align: "center" });
 
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.text("PARIVAHAN SEWA", 105, 36, { align: "center" });
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text("sarathi.parivahan.gov.in", 105, 41, { align: "center" });
 
   // ── Document title ──
   doc.setTextColor(11, 61, 46);
@@ -481,14 +467,17 @@ async function generateRenewalPDF(
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text("✓  RENEWAL APPROVED", 105, y + 8, { align: "center" });
+  const text = "RENEWAL APPROVED";
+  const textWidth = doc.getTextWidth(text);
+  const textX = 74 + (62 - textWidth) / 2;
+  doc.text(text, textX, y + 8);
   y += 20;
 
   // ── Disclaimer ──
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(130, 130, 130);
-  const disclaimer = "This is a digitally generated certificate. It is valid as proof of driving licence renewal as per Motor Vehicles Act, 1988. For verification, visit sarathi.parivahan.gov.in.";
+  const disclaimer = "Mock certificate for demonstration only — not an official document.";
   const disclaimerLines = doc.splitTextToSize(disclaimer, 160);
   doc.text(disclaimerLines, 105, y, { align: "center" });
   y += disclaimerLines.length * 4 + 6;
@@ -499,7 +488,7 @@ async function generateRenewalPDF(
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(255, 255, 255);
-  doc.text("Parivahan Sewa | Ministry of Road Transport & Highways | Government of India", 105, H - 9, { align: "center" });
+  doc.text("Parivahan Sewa — Independent Redesign Prototype", 105, H - 9, { align: "center" });
   doc.setTextColor(212, 162, 76);
   doc.text(`Generated on ${new Date().toLocaleDateString("en-IN")}`, 105, H - 4, { align: "center" });
 
@@ -652,7 +641,6 @@ export default function DLRenewalPage() {
       if (!json.success) { setError(json.error); return; }
       setApplicationId(json.data.applicationId);
       setStep("documents");
-      setTimeout(() => router.refresh(), 0);
     } catch { setError("Network error. Please try again."); }
     finally { setLoading(false); }
   }
@@ -701,7 +689,6 @@ export default function DLRenewalPage() {
       const statusJson = await statusRes.json();
       if (statusJson.success) setApplication(statusJson.data.application);
       setStep("tracking");
-      setTimeout(() => router.refresh(), 0);
     } catch { setError("Payment failed. Please try again."); }
     finally { setLoading(false); }
   }
@@ -1072,7 +1059,7 @@ export default function DLRenewalPage() {
                 <div>
                   <p className="text-sm text-text/60 font-ibm-plex">Renewal Fee</p>
                   <p className="text-3xl font-bold font-mono text-primary">₹200</p>
-                  <p className="text-xs text-text/40 font-ibm-plex mt-0.5">Inclusive of all applicable charges</p>
+                  <p className="text-xs text-text/40 font-ibm-plex mt-0.5">Base renewal fee: ₹200 — final amount calculated based on your application details</p>
                 </div>
                 <button onClick={handleSubmit} disabled={loading}
                   className="px-8 py-3.5 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60">

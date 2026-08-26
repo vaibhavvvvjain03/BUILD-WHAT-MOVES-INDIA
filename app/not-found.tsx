@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { MapPinOff, ArrowLeft } from "lucide-react";
+import { useLang } from "@/components/LangContext";
+import { t } from "@/lib/translations";
 
 export default function NotFound() {
+  const { lang } = useLang();
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-[70vh] px-4">
       <motion.div
@@ -17,7 +20,6 @@ export default function NotFound() {
           {/* Decorative background circle */}
           <div className="absolute inset-0 bg-primary/5 rounded-full" />
           
-          {/* Subtle animated road or map pin off */}
           <motion.div
             initial={{ rotate: -10, scale: 0.9 }}
             animate={{ rotate: 0, scale: 1 }}
@@ -27,7 +29,6 @@ export default function NotFound() {
             <MapPinOff strokeWidth={1.5} className="w-16 h-16" />
           </motion.div>
           
-          {/* Broken path / wrong turn illustration line */}
           <motion.svg
             viewBox="0 0 100 100"
             className="absolute inset-0 w-full h-full text-accent/40 -z-10"
@@ -46,10 +47,10 @@ export default function NotFound() {
         </div>
 
         <h1 className="text-3xl font-bold font-inter text-text mb-4">
-          Dead End
+          {t(lang, "not_found_title") || "Dead End"}
         </h1>
         <p className="text-text/70 font-ibm-plex leading-relaxed mb-8">
-          We couldn&apos;t find the page you&apos;re looking for. The service might have moved, or the link may be incorrect.
+          {t(lang, "not_found_desc") || "We couldn't find the page you're looking for. The service might have moved, or the link may be incorrect."}
         </p>
 
         <Link
@@ -57,7 +58,7 @@ export default function NotFound() {
           className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold font-ibm-plex hover:bg-primary/90 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
+          {t(lang, "back_home") || "Back to Dashboard"}
         </Link>
       </motion.div>
     </div>

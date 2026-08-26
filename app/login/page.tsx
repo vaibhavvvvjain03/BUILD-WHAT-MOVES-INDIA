@@ -19,6 +19,8 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useSession } from "@/lib/sessionContext";
+import { useLang } from "@/components/LangContext";
+import { t } from "@/lib/translations";
 import { mockAadhaarRecords } from "@/lib/mockData";
 import ThemedLoader from "@/components/ThemedLoader";
 // ── OTP input box (reusable) ─────────────────────────────────────────────────
@@ -100,6 +102,7 @@ function LoginPageInner() {
   const searchParams = useSearchParams();
   const returnPath = searchParams.get("return") || "/my-parivahan";
   const { session, login } = useSession();
+  const { lang } = useLang();
 
   // Redirect away if already logged in
   useEffect(() => {
@@ -343,7 +346,7 @@ function LoginPageInner() {
               <div>
                 <p className="text-[10px] text-white/60 uppercase tracking-widest font-mono">Parivahan Sewa</p>
                 <h1 className="text-xl font-bold font-inter leading-tight">
-                  {path === "chooser" ? "Sign In / Register"
+                  {path === "chooser" ? t(lang, "login_title_chooser") || "Sign In / Register"
                     : path === "aadhaar"
                       ? aadhaarStep === "aadhaar-input" ? "Aadhaar Verification" : "Enter OTP"
                       : manualStep === "mobile" ? "Enter Mobile Number"
@@ -402,11 +405,11 @@ function LoginPageInner() {
                       <Fingerprint className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-bold text-primary font-inter">Verify with Aadhaar</p>
+                      <p className="font-bold text-primary font-inter">{t(lang, "verify_aadhaar") || "Verify with Aadhaar"}</p>
                       <p className="text-sm text-text/60 font-ibm-plex mt-0.5">
-                        Instant — auto-fills your name, DOB, address and linked DL if any.
+                        {t(lang, "aadhaar_desc") || "Instant — auto-fills your name, DOB, address and linked DL if any."}
                       </p>
-                      <span className="inline-block mt-2 text-[10px] bg-green-100 text-green-700 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Recommended</span>
+                      <span className="inline-block mt-2 text-[10px] bg-green-100 text-green-700 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">{t(lang, "recommended") || "Recommended"}</span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-primary/40 ml-auto mt-1 flex-shrink-0" />
                   </button>
@@ -420,9 +423,9 @@ function LoginPageInner() {
                       <Phone className="w-5 h-5 text-text/70" />
                     </div>
                     <div>
-                      <p className="font-bold text-text font-inter">Sign In / Sign Up with Mobile</p>
+                      <p className="font-bold text-text font-inter">{t(lang, "signin_mobile") || "Sign In / Sign Up with Mobile"}</p>
                       <p className="text-sm text-text/60 font-ibm-plex mt-0.5">
-                        Use your phone number. New users will fill in profile details once.
+                        {t(lang, "mobile_desc") || "Use your phone number. New users will fill in profile details once."}
                       </p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-text/30 ml-auto mt-1 flex-shrink-0" />
@@ -430,7 +433,7 @@ function LoginPageInner() {
 
                   {/* Aadhaar demo hint */}
                   <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs font-ibm-plex text-amber-800">
-                    <p className="font-bold mb-2">Demo Aadhaar Numbers</p>
+                    <p className="font-bold mb-2">{t(lang, "demo_aadhaar") || "Demo Aadhaar Numbers"}</p>
                     <div className="space-y-1">
                       {mockAadhaarRecords.map((r) => (
                         <div key={r.aadhaarNumber} className="flex items-center justify-between">
@@ -463,7 +466,7 @@ function LoginPageInner() {
                 >
                   <div>
                     <label className="block text-sm font-semibold text-text/70 mb-1.5 font-ibm-plex">
-                      Aadhaar Number
+                      {t(lang, "aadhaar_number") || "Aadhaar Number"}
                     </label>
                     <div className="relative">
                       <Fingerprint className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/50" />
@@ -524,7 +527,7 @@ function LoginPageInner() {
                     className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60"
                   >
                     {aadhaarLoading ? <ThemedLoader size="sm" /> : <CheckCircle className="w-4 h-4" />}
-                    {aadhaarLoading ? "Verifying…" : "Verify & Sign In"}
+                    {aadhaarLoading ? "Verifying…" : "Verify & Demo Sign In"}
                   </button>
 
                   <button type="button" onClick={() => { setAadhaarStep("aadhaar-input"); setAadhaarOtp(emptyOtp()); setAadhaarOtpError(undefined); clearError(); }}
@@ -542,7 +545,7 @@ function LoginPageInner() {
                   onSubmit={handleSendMobileOtp} className="space-y-5"
                 >
                   <div>
-                    <label className="block text-sm font-semibold text-text/70 mb-1.5 font-ibm-plex">Mobile Number</label>
+                    <label className="block text-sm font-semibold text-text/70 mb-1.5 font-ibm-plex">{t(lang, "mobile_number") || "Mobile Number"}</label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text/50 font-ibm-plex text-sm font-semibold select-none">+91</span>
                       <input
@@ -595,7 +598,7 @@ function LoginPageInner() {
                     className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold font-ibm-plex flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60"
                   >
                     {manualLoading ? <ThemedLoader size="sm" /> : <CheckCircle className="w-4 h-4" />}
-                    {manualLoading ? "Verifying…" : "Verify & Continue"}
+                    {manualLoading ? "Verifying…" : "Verify & Demo Sign In"}
                   </button>
 
                   <button type="button" onClick={() => { setManualStep("mobile"); setMobileOtp(emptyOtp()); setMobileOtpError(undefined); clearError(); }}

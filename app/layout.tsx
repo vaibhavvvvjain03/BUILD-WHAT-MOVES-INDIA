@@ -8,7 +8,7 @@ import { SessionProvider } from "@/lib/sessionContext";
 
 export const metadata: Metadata = {
   title: "Parivahan Sewa",
-  description: "Official portal for driving licence and vehicle services",
+  description: "A redesign concept for Parivahan Sewa, the Ministry of Road Transport & Highways' citizen services portal.",
 };
 
 export default function RootLayout({

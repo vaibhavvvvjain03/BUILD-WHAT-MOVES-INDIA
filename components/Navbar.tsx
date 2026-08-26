@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Search, X, ChevronDown, FileBadge, CarFront, Banknote, FileText, Languages, Bot, ChevronRight, Sparkles, User, LogOut, LayoutDashboard, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/components/LangContext";
-import { t } from "@/lib/translations";
+import { t, LANGUAGE_NAMES, Lang } from "@/lib/translations";
 import { useSession } from "@/lib/sessionContext";
 import { findLicenceByDl } from "@/lib/mockData";
 
@@ -31,6 +31,16 @@ const ALL_SECTIONS = serviceCategories.map(category => ({
     }))
 })).filter(section => section.items.length > 0);
 
+function RotatingLanguageText() {
+  return (
+    <div className="relative h-5 overflow-hidden w-[68px] hidden sm:flex items-center">
+      <span className="text-sm font-medium w-full text-left">
+        Language
+      </span>
+    </div>
+  );
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -40,6 +50,7 @@ export default function Navbar() {
 
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"browse" | "describe">("browse");
   const [describeInput, setDescribeInput] = useState("");
@@ -49,13 +60,14 @@ export default function Navbar() {
     {
       id: "init",
       role: "vani",
-      text: "Tell me what you're trying to do on Parivahan."
+      text: t(lang, "Tell me what you're trying to do on Parivahan.")
     }
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   
 
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   // Derive display name from linked DL or fall back to mobile number
@@ -100,6 +112,9 @@ export default function Navbar() {
     const handleClickOutside = (e: MouseEvent) => {
       if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
         setIsUserDropdownOpen(false);
+      }
+      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target as Node)) {
+        setIsLangDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -306,16 +321,50 @@ export default function Navbar() {
             </button>
 
             {/* ── Language Toggle ── */}
-            <div className="relative flex-shrink-0">
+            <div className="relative flex-shrink-0" ref={langDropdownRef}>
               <button
-                onClick={() => setLang(lang === "en" ? "hi" : "en")}
+                onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
                 title="Change language"
                 className="flex items-center gap-1.5 px-2 py-1.5 md:px-3 rounded-full border border-white/30 text-white/80 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors whitespace-nowrap"
               >
                 <Languages className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{lang === "en" ? "हिन्दी" : "English"}</span>
-                <span className="sm:hidden">{lang === "en" ? "हि" : "En"}</span>
+                <RotatingLanguageText />
+                <span className="sm:hidden">{lang.toUpperCase()}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`} />
               </button>
+              
+              <AnimatePresence>
+                {isLangDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-text/10 overflow-hidden z-50"
+                  >
+                    <div className="max-h-[300px] overflow-y-auto py-1 custom-scrollbar">
+                      {Object.entries(LANGUAGE_NAMES).map(([code, name], i) => (
+                        <motion.button
+                          key={code}
+                          initial={{ opacity: 0, x: -15, filter: "blur(4px)" }}
+                          animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                          transition={{ duration: 0.25, delay: i * 0.03, type: "spring", bounce: 0.3 }}
+                          onClick={() => {
+                            setLang(code as Lang);
+                            setIsLangDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                            lang === code ? "bg-primary/5 text-primary font-semibold" : "text-text/70 hover:bg-black/5"
+                          }`}
+                        >
+                          {name}
+                          {lang === code && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* ── Hamburger Menu Toggle (Mobile Only) ── */}
@@ -398,13 +447,13 @@ export default function Navbar() {
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "browse" ? "bg-white shadow-sm text-primary" : "text-text/60 hover:text-text"}`}
                       onClick={() => { setActiveTab("browse"); }}
                     >
-                      {t(lang, "finder_browse") || "Browse & Search"}
+                      {t("en", "Browse & Search")}
                     </button>
                     <button 
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "describe" ? "bg-white shadow-sm text-primary" : "text-text/60 hover:text-text"}`}
                       onClick={() => { setActiveTab("describe"); }}
                     >
-                      {t(lang, "finder_title") || "Describe what you need ✨"}
+                      {t("en", "Describe what you need ✨")}
                     </button>
                   </div>
                   
@@ -413,7 +462,7 @@ export default function Navbar() {
                     <input
                       type="text"
                       autoFocus
-                      placeholder={activeTab === "browse" ? t(lang, "finder_search_placeholder") || "Search by service name or category..." : t(lang, "finder_ai_placeholder") || "E.g. I bought a second-hand car..."}
+                      placeholder={activeTab === "browse" ? t("en", "Search by service name or category...") : t("en", "E.g. I bought a second-hand car...")}
                       value={activeTab === "browse" ? searchTerm : describeInput}
                       onChange={(e) => {
                         if (activeTab === "browse") setSearchTerm(e.target.value);
@@ -443,23 +492,23 @@ export default function Navbar() {
                     {/* Most Used Shortcuts (hidden if searching) */}
                     {!searchTerm.trim() && (
                       <div className="mb-8">
-                        <h3 className="text-xs font-bold text-text/40 uppercase tracking-wider mb-4 font-inter px-2">Most Used</h3>
+                        <h3 className="text-xs font-bold text-text/40 uppercase tracking-wider mb-4 font-inter px-2">{t("en", "Most Used")}</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           <Link href="/services/dl-renewal" prefetch={true} onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
                             <FileBadge className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Renew Licence</span>
+                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">{t("en", "Renew Licence")}</span>
                           </Link>
                           <Link href="/services/transfer-ownership" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
                             <CarFront className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Transfer Vehicle</span>
+                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">{t("en", "Transfer Vehicle")}</span>
                           </Link>
                           <Link href="/services/pay-challan" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
                             <Banknote className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Pay Challan</span>
+                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">{t("en", "Pay Challan")}</span>
                           </Link>
                           <Link href="/track-application" onClick={() => setIsModalOpen(false)} className="flex flex-col p-4 bg-white rounded-2xl shadow-sm border border-text/5 hover:border-accent hover:shadow-md transition-all group">
                             <FileText className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">Track App</span>
+                            <span className="text-sm font-semibold text-text group-hover:text-primary transition-colors">{t("en", "Track App")}</span>
                           </Link>
                         </div>
                       </div>
@@ -468,7 +517,7 @@ export default function Navbar() {
                     {/* Service List */}
                     <div>
                       <h3 className="text-xs font-bold text-text/40 uppercase tracking-wider mb-3 font-inter px-2">
-                        {searchTerm.trim() ? "Search Results" : "All Services"}
+                        {searchTerm.trim() ? t("en", "Search Results") : t("en", "All Services")}
                       </h3>
                       {filteredSections.length === 0 ? (
                         <div className="text-center py-12 text-text/50 font-ibm-plex">
@@ -484,7 +533,7 @@ export default function Navbar() {
                                   onClick={() => toggleSection(section.id)}
                                   className="w-full flex items-center justify-between p-4 bg-white hover:bg-text/[0.02] transition-colors"
                                 >
-                                  <span className="font-bold text-primary font-inter">{section.title}</span>
+                                  <span className="font-bold text-primary font-inter">{t("en", section.title)}</span>
                                   <div className={`p-1 rounded-full transition-colors ${isExpanded ? "bg-primary/10 text-primary" : "text-text/40"}`}>
                                     <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                                   </div>
@@ -506,7 +555,7 @@ export default function Navbar() {
                                               onClick={() => setIsModalOpen(false)}
                                               className="flex items-center px-4 py-3 rounded-xl hover:bg-accent/10 hover:text-primary transition-colors text-text/80 text-sm font-medium group"
                                             >
-                                              {item.name}
+                                              {t("en", item.name)}
                                             </Link>
                                           ))}
                                         </div>
@@ -542,7 +591,7 @@ export default function Navbar() {
                             {msg.isTyping ? (
                               <div className="flex gap-2 items-center h-5 px-1">
                                 <ThemedLoader size="sm" className="text-primary" />
-                                <span className="text-xs text-text/50 font-medium">VANI is thinking...</span>
+                                <span className="text-xs text-text/50 font-medium">{t("en", "VANI is thinking...")}</span>
                               </div>
                             ) : msg.text ? (
                               <p className="text-sm leading-relaxed">{msg.text}</p>
@@ -557,14 +606,14 @@ export default function Navbar() {
                                           <>
                                             <p className="text-sm text-text/80 mb-3">{msg.match.explanation}</p>
                                             <div className="bg-text/5 p-3 rounded-xl border border-text/10 mb-3">
-                                              <h4 className="font-bold text-primary mb-2">{service.name}</h4>
+                                              <h4 className="font-bold text-primary mb-2">{t("en", service.name)}</h4>
                                               
                                               {service.documentsRequired && service.documentsRequired.length > 0 && (
                                                 <div className="mb-2">
-                                                  <span className="text-xs font-bold text-text/60 block mb-1">What you&apos;ll need:</span>
+                                                  <span className="text-xs font-bold text-text/60 block mb-1">{t("en", "What you'll need:")}</span>
                                                   <ul className="text-xs text-text/80 list-disc pl-4">
                                                     {service.documentsRequired.map(doc => (
-                                                      <li key={doc.name}>{doc.name}</li>
+                                                      <li key={doc.name}>{t("en", doc.name)}</li>
                                                     ))}
                                                   </ul>
                                                 </div>
@@ -572,11 +621,11 @@ export default function Navbar() {
                                               
                                               {service.rtoVisitRequired && (
                                                 <div>
-                                                  <span className="text-xs font-bold text-text/60 block mb-1">RTO visit:</span>
+                                                  <span className="text-xs font-bold text-text/60 block mb-1">{t("en", "RTO visit:")}</span>
                                                   <p className="text-xs text-text/80">
-                                                    {service.rtoVisitRequired === 'online' ? 'Completely online.' : 
-                                                     service.rtoVisitRequired === 'required' ? 'Required.' : 
-                                                     'May depend on the application and RTO.'}
+                                                    {service.rtoVisitRequired === 'online' ? t("en", 'Completely online.') : 
+                                                     service.rtoVisitRequired === 'required' ? t("en", 'Required.') : 
+                                                     t("en", 'May depend on the application and RTO.')}
                                                   </p>
                                                 </div>
                                               )}
@@ -584,9 +633,9 @@ export default function Navbar() {
                                             
                                             <div className="flex">
                                               <Link href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm">
-                                                {service.availabilityState === 'implemented' ? 'Start application' :
-                                                 service.availabilityState === 'preview' ? 'View experience preview' : 
-                                                 'Explore service'} 
+                                                {service.availabilityState === 'implemented' ? t("en", 'Start application') :
+                                                 service.availabilityState === 'preview' ? t("en", 'View experience preview') : 
+                                                 t("en", 'Explore service')} 
                                                 <ChevronRight className="w-4 h-4 ml-1" />
                                               </Link>
                                             </div>
@@ -598,9 +647,9 @@ export default function Navbar() {
                                     <div>
                                       {msg.match.matchedService && (
                                         <div className="mb-3 pb-3 border-b border-text/5">
-                                          <h4 className="font-semibold text-text/80 text-sm mb-1">{
+                                            <h4 className="text-sm font-semibold text-primary mb-1">{t("en", 
                                             getAllServices().find(s => s.id === msg.match?.matchedService)?.name || msg.match.matchedService
-                                          } (Tentative)</h4>
+                                          )} ({t("en", "Tentative")})</h4>
                                           <p className="text-xs text-text/60">{msg.match.explanation}</p>
                                         </div>
                                       )}
@@ -613,22 +662,22 @@ export default function Navbar() {
                                         <p className="text-sm font-medium text-text mb-3">{msg.match.clarifyingQuestion}</p>
                                       ) : (
                                         <div className="flex flex-wrap gap-2 mt-2">
-                                          <button onClick={() => setActiveTab("browse")} className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold transition-colors">Browse services</button>
-                                          <button onClick={() => setDescribeInput("")} className="px-3 py-1.5 bg-text/5 text-text/80 hover:bg-text/10 rounded-lg text-xs font-semibold transition-colors">Try again</button>
-                                          <Link href="/help" onClick={() => setIsModalOpen(false)} className="px-3 py-1.5 bg-text/5 text-text/80 hover:bg-text/10 rounded-lg text-xs font-semibold transition-colors">Open Help</Link>
+                                          <button onClick={() => setActiveTab("browse")} className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold transition-colors">{t("en", "Browse services")}</button>
+                                          <button onClick={() => setDescribeInput("")} className="px-3 py-1.5 bg-text/5 text-text/80 hover:bg-text/10 rounded-lg text-xs font-semibold transition-colors">{t("en", "Try again")}</button>
+                                          <Link href="/help" onClick={() => setIsModalOpen(false)} className="px-3 py-1.5 bg-text/5 text-text/80 hover:bg-text/10 rounded-lg text-xs font-semibold transition-colors">{t("en", "Open Help")}</Link>
                                         </div>
                                       )}
                                     </div>
                                  )}
                                  {msg.match.secondaryMatches && msg.match.secondaryMatches.length > 0 && (
                                     <div className="pt-3 border-t border-text/5 mt-3">
-                                      <p className="text-xs font-semibold text-text/50 mb-2">You also asked about:</p>
+                                      <p className="text-xs font-semibold text-text/50 mb-2">{t("en", "You also asked about:")}</p>
                                       <div className="flex flex-wrap gap-2">
                                         {msg.match.secondaryMatches.map(alt => {
                                           const service = getAllServices().find(s => s.id === alt);
                                           return service ? (
                                              <Link key={alt} href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 rounded-md text-xs font-medium text-primary transition-colors">
-                                               {service.name}
+                                               {t("en", service.name)}
                                              </Link>
                                           ) : null;
                                         })}
@@ -637,13 +686,13 @@ export default function Navbar() {
                                  )}
                                  {msg.match.alternativeMatches && msg.match.alternativeMatches.length > 0 && (
                                     <div className="pt-3 border-t border-text/5 mt-3">
-                                      <p className="text-xs font-semibold text-text/50 mb-2">Related:</p>
+                                      <p className="text-xs font-semibold text-text/50 mb-2">{t("en", "Related:")}</p>
                                       <div className="flex flex-wrap gap-2">
                                         {msg.match.alternativeMatches.map(alt => {
                                           const service = getAllServices().find(s => s.id === alt);
                                           return service ? (
                                              <Link key={alt} href={`/services/${service.id}`} onClick={() => setIsModalOpen(false)} className="px-2.5 py-1.5 bg-text/5 hover:bg-text/10 rounded-md text-xs font-medium text-text transition-colors">
-                                               {service.name}
+                                               {t("en", service.name)}
                                              </Link>
                                           ) : null;
                                         })}
