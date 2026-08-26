@@ -11,24 +11,33 @@ export const metadata: Metadata = {
   description: "A redesign concept for Parivahan Sewa, the Ministry of Road Transport & Highways' citizen services portal.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="overflow-x-hidden">
+    <html lang="en">
       <body
         className={`font-ibm-plex bg-background text-text antialiased flex flex-col min-h-screen pb-10 overflow-x-hidden`}
       >
         <SessionProvider>
           <LangProvider>
-            <Navbar />
-            <main className="flex-1 pt-32">
-              {children}
-            </main>
-            <Footer />
-            <DisclaimerTicker />
+            <div className="flex flex-col min-h-screen w-full max-w-[100vw] overflow-x-hidden">
+              <Navbar />
+              <main className="flex-1 pt-32">
+                {children}
+              </main>
+              <Footer />
+              <DisclaimerTicker />
+            </div>
           </LangProvider>
         </SessionProvider>
       </body>
