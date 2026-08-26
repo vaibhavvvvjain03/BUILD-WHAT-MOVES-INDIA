@@ -437,7 +437,7 @@ export default function Navbar() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="relative w-full max-w-3xl bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              className="relative w-[96vw] sm:w-full max-w-3xl bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh]"
             >
               {/* Search Header */}
                 <div className="flex flex-col px-4 pt-4 pb-2 bg-white border-b border-text/10 gap-3">
@@ -461,7 +461,6 @@ export default function Navbar() {
                     <Search className="w-5 h-5 text-text/40 mr-3 shrink-0" />
                     <input
                       type="text"
-                      autoFocus
                       placeholder={activeTab === "browse" ? t("en", "Search by service name or category...") : t("en", "E.g. I bought a second-hand car...")}
                       value={activeTab === "browse" ? searchTerm : describeInput}
                       onChange={(e) => {
