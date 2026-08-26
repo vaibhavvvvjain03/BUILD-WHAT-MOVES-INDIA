@@ -4,11 +4,9 @@ import Link from "next/link";
 import { ChevronRight, Search, LayoutGrid } from "lucide-react";
 import { serviceCategories, getAllServices } from "@/lib/serviceCatalog";
 import { useState } from "react";
-import { useLang } from "@/components/LangContext";
 import { t } from "@/lib/translations";
 
 export default function ServicesCataloguePage() {
-  const { lang } = useLang();
   const [searchQuery, setSearchQuery] = useState("");
 
   const allServices = getAllServices();
