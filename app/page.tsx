@@ -68,30 +68,30 @@ export default function Home() {
       {/* ── Hero Section ── */}
       <section className="py-16 md:py-24 text-center">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-inter text-primary mb-6 leading-tight text-center flex flex-col items-center justify-center">
-          <motion.div layout className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2">
-            <span className="relative grid items-center justify-items-center text-primary overflow-visible min-w-[200px]">
-              <AnimatePresence mode="popLayout">
+          <motion.div layout className="flex flex-wrap justify-center items-center gap-x-2 gap-y-2">
+            <span className="text-primary text-3xl md:text-5xl lg:text-6xl">
+              <AnimatePresence mode="wait">
                 <motion.span
                   key={`action-${lang}-${index}`}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="whitespace-nowrap row-start-1 col-start-1"
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="inline-block"
                 >
                   {t(lang, `hero_action_${index}`)}
                 </motion.span>
               </AnimatePresence>
             </span>
-            <span className="relative grid items-center justify-items-center text-accent overflow-visible">
-              <AnimatePresence mode="popLayout">
+            <span className="text-accent text-3xl md:text-5xl lg:text-6xl">
+              <AnimatePresence mode="wait">
                 <motion.span
                   key={`${lang}-${index}`}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="whitespace-nowrap row-start-1 col-start-1"
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="inline-block"
                 >
                   {words[index]}
                 </motion.span>
@@ -99,15 +99,15 @@ export default function Home() {
             </span>
           </motion.div>
         </h1>
-        <div className="relative h-[80px] md:h-[60px] flex items-start justify-center max-w-2xl mx-auto mb-10 overflow-hidden">
-          <AnimatePresence mode="popLayout">
+        <div className="relative min-h-[80px] md:min-h-[60px] flex items-start justify-center max-w-2xl mx-auto mb-10">
+          <AnimatePresence mode="wait">
             <motion.p
               key={`desc-${lang}-${index}`}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="text-lg md:text-xl text-text/80 font-ibm-plex text-center absolute"
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="text-lg md:text-xl text-text/80 font-ibm-plex text-center"
             >
               {t(lang, `hero_desc_${index}`)}
             </motion.p>

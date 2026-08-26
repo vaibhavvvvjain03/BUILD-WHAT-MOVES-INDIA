@@ -196,13 +196,13 @@ export default function Navbar() {
 
   return (
     <div className="fixed top-4 left-4 right-4 z-[100] flex justify-center">
-      <nav className="relative w-full max-w-[95%] xl:max-w-7xl bg-primary text-white rounded-3xl xl:rounded-full px-3 py-2 xl:px-6 xl:py-3 shadow-lg flex flex-col xl:flex-row xl:items-center justify-between">
+      <nav className="relative w-full max-w-[98%] xl:max-w-7xl bg-primary text-white rounded-3xl xl:rounded-full px-2 py-2 md:px-6 md:py-3 shadow-lg flex flex-col xl:flex-row xl:items-center justify-between">
         
         {/* Top Row (Always visible) */}
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between w-full min-w-0">
           
           {/* Logo */}
-          <Link href="/" className="font-bold font-inter text-lg xl:text-xl tracking-tight shrink-0 mr-2">
+          <Link href="/" className="font-bold font-inter text-[15px] sm:text-lg xl:text-xl tracking-tight shrink min-w-[100px] mr-1 truncate">
             Parivahan Sewa
           </Link>
 
@@ -325,10 +325,10 @@ export default function Navbar() {
               <button
                 onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
                 title="Change language"
-                className="flex items-center gap-1.5 px-2 py-1.5 md:px-3 rounded-full border border-white/30 text-white/80 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors whitespace-nowrap"
+                className="flex items-center gap-1 md:gap-1.5 px-2 py-1.5 md:px-3 rounded-full border border-white/30 text-white/80 hover:bg-white/10 hover:text-white text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
               >
                 <Languages className="w-3.5 h-3.5" />
-                <RotatingLanguageText />
+                <span className="hidden sm:inline-block"><RotatingLanguageText /></span>
                 <span className="sm:hidden">{lang.toUpperCase()}</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`} />
               </button>
