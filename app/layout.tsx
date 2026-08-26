@@ -17,9 +17,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="overflow-x-hidden">
       <body
-        className={`font-ibm-plex bg-background text-text antialiased flex flex-col min-h-screen pb-10`}
+        className={`font-ibm-plex bg-background text-text antialiased flex flex-col min-h-screen pb-10 overflow-x-hidden`}
       >
         <SessionProvider>
           <LangProvider>
