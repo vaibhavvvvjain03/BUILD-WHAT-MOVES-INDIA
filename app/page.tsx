@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/components/LangContext";
+import { useSession } from "@/lib/sessionContext";
 import { t } from "@/lib/translations";
 
 // ── Intent options ────────────────────────────────────────────────────────────
@@ -32,6 +33,7 @@ const POPULAR_TASKS = [
 
 export default function Home() {
   const { lang } = useLang();
+  const { session } = useSession();
 
   const words = [
     t(lang, "hero_word_0"),
@@ -66,7 +68,60 @@ export default function Home() {
     <div className="max-w-6xl mx-auto px-6 pb-20">
 
       {/* ── Hero Section ── */}
-      <section className="py-16 md:py-24 text-center">
+      <section className="relative pt-8 pb-16 md:pt-12 md:pb-24 text-center">
+        
+        {/* Subtle Background Pattern (Highway Motif with Animated Vehicles) */}
+        <div className="absolute -top-12 left-0 right-0 h-[400px] overflow-hidden pointer-events-none -z-10">
+          <svg viewBox="0 0 1400 400" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
+            <defs>
+              <path id="mainRoad" d="M-100,120 Q700,320 1500,120" />
+              <path id="secondaryRoadReverse" d="M1500,320 Q700,20 -100,320" />
+            </defs>
+
+            {/* Road group */}
+            <g className="stroke-primary fill-none stroke-[2px] opacity-[0.08]">
+              <path d="M-100,100 Q700,300 1500,100" />
+              <use href="#mainRoad" strokeDasharray="12,16" strokeWidth="4" className="stroke-accent" />
+              <path d="M-100,140 Q700,340 1500,140" />
+              
+              {/* Second sweeping curve */}
+              <path d="M-100,300 Q700,0 1500,300" />
+              <path d="M-100,320 Q700,20 1500,320" strokeDasharray="8,12" strokeWidth="3" />
+              <path d="M-100,340 Q700,40 1500,340" />
+            </g>
+
+            {/* Car 1 */}
+            <g className="fill-primary opacity-30">
+              <rect x="-14" y="-7" width="28" height="14" rx="4" />
+              <rect x="-2" y="-5" width="10" height="10" rx="2" className="fill-background" />
+              <circle cx="12" cy="-4" r="2" className="fill-yellow-400" />
+              <circle cx="12" cy="4" r="2" className="fill-yellow-400" />
+              <animateMotion dur="16s" repeatCount="indefinite" rotate="auto">
+                <mpath href="#mainRoad" />
+              </animateMotion>
+            </g>
+
+            {/* Car 2 (going opposite direction) */}
+            <g className="fill-accent opacity-30">
+              <rect x="-12" y="-6" width="24" height="12" rx="3" />
+              <rect x="-2" y="-4" width="8" height="8" rx="1.5" className="fill-background" />
+              <animateMotion dur="22s" repeatCount="indefinite" rotate="auto">
+                <mpath href="#secondaryRoadReverse" />
+              </animateMotion>
+            </g>
+          </svg>
+        </div>
+
+        {session?.isLoggedIn && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-full text-sm font-medium mb-8 border border-emerald-100 shadow-sm"
+          >
+            <span className="text-xl">👋</span> Welcome back, {session.name?.split(" ")[0] || "User"}
+          </motion.div>
+        )}
+
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-inter text-primary mb-6 leading-tight text-center flex flex-col items-center justify-center">
           <motion.div layout className="flex flex-wrap justify-center items-center gap-x-2 gap-y-2">
             <span className="text-primary text-3xl md:text-5xl lg:text-6xl">
