@@ -81,7 +81,7 @@ export default function Home() {
             {/* Road group */}
             <g className="stroke-primary fill-none stroke-[2px] opacity-[0.08]">
               <path d="M-100,100 Q700,300 1500,100" />
-              <use href="#mainRoad" strokeDasharray="12,16" strokeWidth="4" className="stroke-accent" />
+              <use xlinkHref="#mainRoad" strokeDasharray="12,16" strokeWidth="4" className="stroke-accent" />
               <path d="M-100,140 Q700,340 1500,140" />
               
               {/* Second sweeping curve */}
@@ -97,7 +97,7 @@ export default function Home() {
               <circle cx="12" cy="-4" r="2" className="fill-yellow-400" />
               <circle cx="12" cy="4" r="2" className="fill-yellow-400" />
               <animateMotion dur="16s" repeatCount="indefinite" rotate="auto">
-                <mpath href="#mainRoad" />
+                <mpath xlinkHref="#mainRoad" />
               </animateMotion>
             </g>
 
@@ -106,7 +106,7 @@ export default function Home() {
               <rect x="-12" y="-6" width="24" height="12" rx="3" />
               <rect x="-2" y="-4" width="8" height="8" rx="1.5" className="fill-background" />
               <animateMotion dur="22s" repeatCount="indefinite" rotate="auto">
-                <mpath href="#secondaryRoadReverse" />
+                <mpath xlinkHref="#secondaryRoadReverse" />
               </animateMotion>
             </g>
           </svg>
