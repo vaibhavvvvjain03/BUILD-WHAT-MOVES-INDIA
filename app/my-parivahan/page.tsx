@@ -92,6 +92,51 @@ export default function MyParivahanPage() {
     }
   }, [session.isLoggedIn]);
 
+  // ── Notifications & Settings State ─────────────────────────────────────────
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>(null);
+
+  useEffect(() => {
+    if (session.isLoggedIn) {
+      fetch("/api/user/notifications")
+        .then((res) => res.json())
+        .then((data) => setNotifications(data))
+        .catch(console.error);
+      
+      fetch("/api/user/settings")
+        .then((res) => res.json())
+        .then((data) => setSettings(data))
+        .catch(console.error);
+    }
+  }, [session.isLoggedIn]);
+
+  const hasUnreadNotif = notifications.some((n) => !n.read);
+
+  const markAllRead = async () => {
+    try {
+      const res = await fetch("/api/user/notifications", {
+        method: "POST",
+        body: JSON.stringify({ action: "mark_all_read" }),
+      });
+      const data = await res.json();
+      if (data.success) setNotifications(data.notifications);
+    } catch (e) { console.error(e); }
+  };
+
+  const updateSetting = async (key: string, val: boolean) => {
+    try {
+      setSettings((prev: any) => ({ ...prev, [key]: val }));
+      const res = await fetch("/api/user/settings", {
+        method: "POST",
+        body: JSON.stringify({ [key]: val }),
+      });
+      const data = await res.json();
+      if (data.success) setSettings(data.settings);
+    } catch (e) { console.error(e); }
+  };
+
   useEffect(() => {
     if (!session.isLoggedIn) return;
     fetchApplications();
@@ -151,11 +196,17 @@ export default function MyParivahanPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors relative">
+              <button 
+                onClick={() => { setIsNotifOpen(true); markAllRead(); }}
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors relative"
+              >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full" />
+                {hasUnreadNotif && <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full" />}
               </button>
-              <button className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+              >
                 <Settings className="w-5 h-5" />
               </button>
               <button
@@ -575,6 +626,120 @@ export default function MyParivahanPage() {
                       );
                     })()}
                   </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Notifications Panel ── */}
+      <AnimatePresence>
+        {isNotifOpen && (
+          <div className="fixed inset-0 z-[100] flex justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsNotifOpen(false)}
+              className="absolute inset-0 bg-primary/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-sm bg-white h-full shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-text/10 flex items-center justify-between bg-bg">
+                <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                  <Bell className="w-5 h-5" /> Notifications
+                </h2>
+                <button onClick={() => setIsNotifOpen(false)} className="text-text/60 hover:text-text">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {notifications.length === 0 ? (
+                  <p className="text-text/50 text-center py-10">No notifications.</p>
+                ) : (
+                  notifications.map((n) => (
+                    <div key={n.id} className="p-4 rounded-xl border border-text/10 bg-white shadow-sm">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-semibold text-text text-sm">{n.title}</h3>
+                        <span className="text-[10px] text-text/40">{n.time}</span>
+                      </div>
+                      <p className="text-xs text-text/70">{n.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Settings Panel ── */}
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <div className="fixed inset-0 z-[100] flex justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSettingsOpen(false)}
+              className="absolute inset-0 bg-primary/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-sm bg-white h-full shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-text/10 flex items-center justify-between bg-bg">
+                <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                  <Settings className="w-5 h-5" /> Settings
+                </h2>
+                <button onClick={() => setIsSettingsOpen(false)} className="text-text/60 hover:text-text">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {settings ? (
+                  <>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold text-text/50 uppercase tracking-wider">Preferences</h3>
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="text-sm font-medium text-text">SMS Alerts</span>
+                        <input type="checkbox" checked={settings.smsAlerts} onChange={(e) => updateSetting("smsAlerts", e.target.checked)} className="w-4 h-4 accent-primary" />
+                      </label>
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="text-sm font-medium text-text">Email Notifications</span>
+                        <input type="checkbox" checked={settings.emailNotifications} onChange={(e) => updateSetting("emailNotifications", e.target.checked)} className="w-4 h-4 accent-primary" />
+                      </label>
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="text-sm font-medium text-text">Push Notifications</span>
+                        <input type="checkbox" checked={settings.pushNotifications} onChange={(e) => updateSetting("pushNotifications", e.target.checked)} className="w-4 h-4 accent-primary" />
+                      </label>
+                    </div>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold text-text/50 uppercase tracking-wider">Appearance</h3>
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="text-sm font-medium text-text">Dark Mode</span>
+                        <input type="checkbox" checked={settings.darkMode} onChange={(e) => updateSetting("darkMode", e.target.checked)} className="w-4 h-4 accent-primary" />
+                      </label>
+                    </div>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold text-text/50 uppercase tracking-wider">Security</h3>
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="text-sm font-medium text-text">Two-Factor Authentication</span>
+                        <input type="checkbox" checked={settings.twoFactorAuth} onChange={(e) => updateSetting("twoFactorAuth", e.target.checked)} className="w-4 h-4 accent-primary" />
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-center text-text/50 py-10">Loading settings...</p>
                 )}
               </div>
             </motion.div>
